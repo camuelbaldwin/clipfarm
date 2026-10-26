@@ -2,6 +2,8 @@
 
 This desktop app runs the Clip Farm interface and its existing API routes on your Mac. It does not require Wrangler or a separate Cloudflare account to launch. Provider accounts and API keys are still needed for live search, analysis, social-link extraction, keyword metrics, and rendering.
 
+The Intel build targets macOS 10.15 Catalina and newer. Catalina support requires Electron 32.3.3; Electron 33 and newer require macOS 11 or newer. Electron 32 has reached end of support, so this build is intended for Catalina compatibility and uses an older Chromium runtime. Upgrade macOS when possible for a maintained desktop runtime.
+
 ## What is included
 
 - **Find videos:** search indexed public videos by topic, niche, or keyword.

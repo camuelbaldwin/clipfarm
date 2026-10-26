@@ -12,6 +12,8 @@ Clip Farm is a video research and prompt-building workspace. It supports public 
 
 The Mac app opens Clip Farm in its own desktop window and runs the existing provider routes locally. You do not need Wrangler or a Cloudflare account to launch it.
 
+The Intel build targets macOS 10.15 Catalina and newer. It pins Electron 32.3.3 because Electron 33 and newer require macOS 11 or newer. Electron 32 is end-of-support; this compatibility build uses an older Chromium runtime. Upgrade macOS when possible.
+
 ```sh
 cd mac
 npm install
