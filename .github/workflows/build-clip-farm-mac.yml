@@ -1,0 +1,32 @@
+name: Build Clip Farm for Mac
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "worker/index.js"
+      - "mac/**"
+      - ".github/workflows/build-clip-farm-mac.yml"
+
+jobs:
+  package-intel-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Check out Clip Farm
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install desktop dependencies
+        working-directory: mac
+        run: npm install
+      - name: Package Intel Mac app
+        working-directory: mac
+        run: npm run pack:mac:x64
+      - name: Upload Mac disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: clip-farm-mac-intel
+          path: mac/release/*.dmg
+          if-no-files-found: error

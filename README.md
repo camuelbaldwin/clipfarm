@@ -4,25 +4,38 @@ Clip Farm is a video research and prompt-building workspace. It supports public 
 
 ## Repository layout
 
-- `worker/index.js` — Cloudflare Worker entry point and the complete app UI.
-- `wrangler.toml` — Worker configuration for local development and deployment.
+- `worker/index.js` — the app interface and provider API routes.
+- `mac/` — a desktop app for Intel and Apple Silicon Macs.
+- `wrangler.toml` — optional Cloudflare Worker configuration for the web version.
 
-## Run locally
+## Use the Mac app
 
-Install Wrangler, then run the Worker from this repository:
+The Mac app opens Clip Farm in its own desktop window and runs the existing provider routes locally. You do not need Wrangler or a Cloudflare account to launch it.
+
+```sh
+cd mac
+npm install
+npm start
+```
+
+To package an Intel Mac disk image on a Mac:
+
+```sh
+npm run pack:mac:x64
+```
+
+The GitHub Actions workflow **Build Clip Farm for Mac** can create a downloadable Intel `.dmg` artifact. See [mac/README.md](mac/README.md) for setup and install details.
+
+## Use the web Worker
+
+Wrangler is only needed if you want to run or deploy the web version locally:
 
 ```sh
 npm install --global wrangler
 wrangler dev
 ```
 
-The app page runs locally at the URL Wrangler prints. Provider calls require keys entered in the app's API connections panel.
-
-## Check the source
-
-```sh
-node --check worker/index.js
-```
+Provider calls require keys entered in the app's API connections panel.
 
 ## Provider keys
 
@@ -30,4 +43,4 @@ Gemini, Revid, Apify, and Google Ads credentials are supplied by the operator at
 
 ## Deployment
 
-This repository is the GitHub source for Clip Farm. Deploy the Worker to a Cloudflare account with Wrangler after configuring that account. Do not deploy a second copy to GitHub Pages; the app needs Worker routes for provider API calls.
+This repository is the GitHub source for Clip Farm. Deploy the web Worker to a Cloudflare account with Wrangler only when you want to update that web deployment. The Mac app is packaged separately by electron-builder on a macOS runner.

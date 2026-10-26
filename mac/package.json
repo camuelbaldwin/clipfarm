@@ -1,0 +1,46 @@
+{
+  "name": "clip-farm-studio-mac",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Clip Farm Studio desktop app for Intel and Apple Silicon Macs",
+  "main": "main.mjs",
+  "scripts": {
+    "sync:worker": "node scripts/sync-worker.mjs",
+    "start": "npm run sync:worker && electron .",
+    "pack:mac:x64": "npm run sync:worker && electron-builder --mac dmg --x64",
+    "pack:mac:arm64": "npm run sync:worker && electron-builder --mac dmg --arm64"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.camuelb.clipfarmstudio",
+    "productName": "Clip Farm Studio",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.mjs",
+      "worker.mjs",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64"]
+        }
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    }
+  }
+}
