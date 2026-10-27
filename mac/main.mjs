@@ -52,7 +52,7 @@ async function startLocalServer() {
 
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
+    server.listen(43129, "127.0.0.1", () => {
       server.off("error", reject);
       resolve();
     });
