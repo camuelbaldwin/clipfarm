@@ -46,3 +46,36 @@ Gemini, Revid, Apify, and Google Ads credentials are supplied by the operator at
 ## Deployment
 
 This repository is the GitHub source for Clip Farm. Deploy the web Worker to a Cloudflare account with Wrangler only when you want to update that web deployment. The Mac app is packaged separately by electron-builder on a macOS runner.
+## Batch SEO → Revid → YouTube
+
+In **Batch Production**, use **Download JSON example** for the supported Make-to-Clip-Farm JSON shape:
+
+```json
+[
+  {
+    "title": "How Engineers Built the Channel Tunnel",
+    "script": "Your narration script...",
+    "prompt": "Realistic 3D cutaways of tunnel boring machines",
+    "stylePrompt": "9:16 vertical engineering explainer",
+    "referenceUrl": "",
+    "seo": {
+      "title": "How the Channel Tunnel Was Built",
+      "description": "Watch the engineering behind the Channel Tunnel.",
+      "primaryKeyword": "Channel Tunnel construction",
+      "tags": ["Channel Tunnel", "engineering", "tunnel boring"]
+    }
+  }
+]
+```
+
+Clip Farm accepts an array of up to 100 jobs, or `{"videos":[...]}`. The **script** field is required. Its SEO metadata is retained in the local queue and **Export queue/status** output, so a Make scenario can generate JSON for batches of five. Importing the JSON does **not** start rendering. Estimate credits and start up to five separate Revid jobs concurrently. Keep the app open while it polls.
+
+### YouTube publishing
+
+1. Connect YouTube under Revid **Settings → Integrations**.
+2. Save your Revid API key in Clip Farm. In Batch Production, select **Load accounts** and choose the correct YouTube channel.
+3. After a render completes, preview the result; use **Edit SEO** to inspect the title, description, keyword and tags.
+4. Check **Approved** for that specific video, then click **Publish to YouTube** and confirm the destination.
+5. The queue records a Revid submission response separately from confirmed publication. Check Revid or YouTube Studio for final publication and errors.
+
+Publishing uses Revid public v3 `social-accounts` and `publish-now`. The account-specific v3 publishing payload still requires an authenticated end-to-end check before production use. Nothing auto-publishes merely because a job finished rendering. Current queue/status data is stored in the local browser/app profile, not automatically synchronized back to Google Sheets. The Google Sheets → Make JSON preparation is configured in Make separately.
