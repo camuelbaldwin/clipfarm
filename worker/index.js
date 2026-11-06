@@ -324,14 +324,14 @@ $("pipelineDrafts").onclick=e=>{const i=e.target.dataset.pedit;if(i===undefined)
  v.title=title.trim();v.script=script.trim();v.prompt=visual.trim();v.seo={...v.seo,title:title.trim(),description:description.trim(),tags:tags.split(",").map(x=>x.trim()).filter(Boolean)};v.seoTitle=v.seo.title;v.seoDescription=v.seo.description;v.primaryKeyword=v.seo.primaryKeyword;v.tags=v.seo.tags;pipelineSave();pipelineDraw();
 };
 $("pipelineResearch").onclick=async()=>{
- const k=keys(),topic=$("pipelineTopic").value.trim();if(!topic)return alert("Enter a research topic.");if(!k.revid)return alert("Add your Revid API key in API connections.");
- const b=$("pipelineResearch");b.disabled=true;$("pipelineStatus").textContent="Searching Revid's public-video index for original reference opportunities…";
+ const k=keys(),topic=$("pipelineTopic").value.trim();if(!topic)return alert("Enter a research topic.");if(!k.vidiq)return alert("Add your vidIQ MCP API key in API connections.");
+ const b=$("pipelineResearch");b.disabled=true;$("pipelineStatus").textContent="Researching breakout Shorts and keywords with vidIQ…";
  try{
-  const d=await api("/api/revid/search",{key:k.revid,query:topic,platforms:["youtube"],sort:"popular",limit:20,viralOnly:true});
+  const d=await api("/api/vidiq/research",{key:k.vidiq,topic});pipelineKeywords=d.keywords||[];
   const refs=(d.videos||[]).filter(v=>v&&typeof v==="object").sort((a,b)=>pipelineScore(b)-pipelineScore(a));
   pipelineRefs=refs.map((v,i)=>({...v,selected:i<Math.min(10,refs.length)}));pipelineDrafts=[];
-  $("pipelineStatus").textContent=refs.length+" references found. Select relevant examples before generating; views and likes are reported by the provider, not independent vidIQ scores.";
-  pipelineSave();pipelineDraw();if(!refs.length)alert("No public reference results for this topic. Try a broader phrase.");
+  $("pipelineStatus").textContent=refs.length+" references found. Select relevant examples before generating; breakout scores and views are from vidIQ.";
+  pipelineSave();pipelineDraw();if(!refs.length)alert("No vidIQ outliers found. Try a broader topic.");
  }catch(e){$("pipelineStatus").textContent=e.message;err(e)}finally{b.disabled=false}
 };
 $("pipelineGenerate").onclick=async()=>{
@@ -340,8 +340,8 @@ $("pipelineGenerate").onclick=async()=>{
  if(!selected.length)return alert("Select at least one reference video.");
  const b=$("pipelineGenerate");b.disabled=true;$("pipelineStatus").textContent="Generating original scripts, visual plans and metadata from "+selected.length+" reference records…";
  try{
-  const refs=selected.slice(0,15).map(v=>({url:pipelineRefUrl(v),title:String(v.summary||v.description||v.hook||"").slice(0,350),views:v.engagement?.views??v.views??null,likes:v.engagement?.likes??v.likes??null,platform:v.platform||"youtube"}));
-  const d=await api("/api/gemini/research-batch",{key:k.gemini,topic:$("pipelineTopic").value.trim(),direction:$("pipelineDirection").value.trim(),count,references:refs});
+  const refs=selected.slice(0,15).map(v=>({url:pipelineRefUrl(v),title:String(v.summary||v.description||v.hook||"").slice(0,350),views:v.engagement?.views??v.views??null,likes:v.engagement?.likes??v.likes??null,platform:v.platform||"youtube",outlierScore:v.outlierScore??null,vph:v.vph??null}));
+  const d=await api("/api/gemini/research-batch",{key:k.gemini,topic:$("pipelineTopic").value.trim(),direction:$("pipelineDirection").value.trim(),count,references:refs,keywords:pipelineKeywords.slice(0,15)});
   pipelineDrafts=batchRead(d.videos).map(v=>({...v,seo:{title:v.seoTitle,description:v.seoDescription,primaryKeyword:v.primaryKeyword,tags:v.tags},referenceUrl:batchSafeUrl(v.referenceUrl),selected:true}));
   $("pipelineStatus").textContent=pipelineDrafts.length+" drafts generated. Inspect scripts and claims, edit metadata, then send to the rendering queue.";
   pipelineSave();pipelineDraw();
@@ -411,6 +411,47 @@ async function revidRest(path,key,body){
  if(!r.ok||d.success===0)throw new Error(d.error||d.message||(d.code==="RATE_LIMIT_EXCEEDED"?"Revid’s video-search limit for this account has been reached.":"Revid request failed ("+r.status+")."));
  return d;
 }
+
+async function vidiqCall(apiKey,toolName,args){
+ const url="https://mcp.vidiq.com/mcp";
+ const headers={"authorization":"Bearer "+apiKey,"content-type":"application/json","accept":"application/json, text/event-stream","mcp-protocol-version":"2025-03-26"};
+ async function send(method,params,id,session){
+  const h={...headers};if(session)h["mcp-session-id"]=session;
+  const payload={jsonrpc:"2.0",method,...(id===null?{}:{id}),...(params===undefined?{}:{params})};
+  const r=await fetch(url,{method:"POST",headers:h,body:JSON.stringify(payload)});
+  const body=await r.text();if(!r.ok)throw Error("vidIQ request failed ("+r.status+"): "+body.slice(0,300));
+  let value;try{value=JSON.parse(body)}catch{for(const line of body.split("\n")){if(!line.startsWith("data:"))continue;try{const d=JSON.parse(line.slice(5).trim());if(d.result||d.error){value=d;break}}catch{}}}
+  if(value?.error)throw Error("vidIQ: "+(value.error.message||"MCP error"));
+  return {value,session:r.headers.get("mcp-session-id")||session};
+ }
+ const init=await send("initialize",{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"Clip Farm Studio",version:"1.1"}},1);
+ if(!init.value?.result)throw Error("vidIQ initialization failed. Check your MCP API key.");
+ await send("notifications/initialized",undefined,null,init.session);
+ const call=await send("tools/call",{name:toolName,arguments:args},2,init.session);
+ const result=call.value?.result;if(!result)throw Error("vidIQ did not return "+toolName+" results");
+ if(result.isError)throw Error((result.content||[]).map(x=>x.text||"").join(" ").slice(0,400)||"vidIQ tool failed");
+ return String(result.structuredContent?.answer||result.structuredContent?.text||(result.content||[]).map(x=>x.text||"").join("\n")||"");
+}
+function vidIqNum(raw){const m=String(raw||"").replace(/,/g,"").match(/([\d.]+)\s*([KMB])?/i);if(!m)return null;return Number(m[1])*({K:1000,M:1000000,B:1000000000}[String(m[2]||"").toUpperCase()]||1)}
+function parseVidIQOutliers(text){
+ const parts=String(text||"").split(/^###\s*\d+\.\s*/m).slice(1),videos=[];
+ for(const part of parts){
+  const title=part.split("\n")[0].replace(/\*\*/g,"").trim(),id=part.match(/videoId\s*\x60([A-Za-z0-9_-]{11})\x60/),line=part.match(/Performance:\*?\*?\s*([^\n]+)/);
+  if(!title||!id||!line)continue;
+  const views=line[1].match(/([\d.,]+\s*[KMB]?)\s+views/i),breakout=line[1].match(/([\d.,]+)\s*x\s+breakout/i),vph=line[1].match(/([\d.,]+\s*[KMB]?)\s+views\/hour/i),channel=part.match(/Channel:\*?\*?\s*([^·\n]+)/);
+  videos.push({id:id[1],summary:title,url:"https://www.youtube.com/watch?v="+id[1],platform:"youtube",author:{nickname:(channel?.[1]||"").trim()},engagement:{views:views?vidIqNum(views[1]):null},outlierScore:breakout?Number(breakout[1].replace(/,/g,"")):null,vph:vph?vidIqNum(vph[1]):null});
+ }
+ return videos;
+}
+function parseVidIQKeywords(text){
+ const lines=String(text||"").split("\n"),list=[];let found=false;
+ for(const line of lines){if(line.includes("| keyword |")&&line.includes("volume")){found=true;continue}if(!found)continue;if(!line.trim().startsWith("|")){if(list.length)break;continue}
+  if(/^\|\s*[-:]+/.test(line))continue;const c=line.split("|").slice(1,-1).map(x=>x.trim());
+  if(!c[0]||c[0]==="keyword")continue;list.push({keyword:c[0],volume:Number(c[1])||0,competition:c[2]==="null"?null:Number(c[2]),estimatedMonthlySearch:c[4]||null});if(list.length>=15)break;
+ }
+ return list;
+}
+
 async function geminiGenerate(key,input,schema){
  const body={model:"gemini-3.8-flash",input};if(schema)body.response_format=[{type:"text",mime_type:"application/json",schema}];
  const r=await fetch("https://generativelanguage.googleapis.com/v1beta/interactions",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":key},body:JSON.stringify(body)});
@@ -429,13 +470,22 @@ export default {async fetch(request){
  const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
  if(request.method==="GET"&&url.pathname==="/")return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});
  try{
+  if(request.method==="POST"&&url.pathname==="/api/vidiq/research"){
+   const {key,topic}=await request.json();if(!key||!String(topic||"").trim())throw Error("vidIQ key and research topic required.");
+   const keyword=String(topic).trim().slice(0,150),outliers=await vidiqCall(key,"vidiq_outliers",{keyword,contentType:"short",limit:20});
+   const videos=parseVidIQOutliers(outliers);
+   let keywords=[],keywordError="";
+   try{const result=await vidiqCall(key,"vidiq_keyword_research",{mode:"research",keyword,limit:12});keywords=parseVidIQKeywords(result)}
+   catch(e){keywordError=String(e.message||e).slice(0,220)}
+   return json({source:"vidIQ MCP",videos,keywords,keywordError});
+  }
   if(request.method==="POST"&&url.pathname==="/api/gemini/research-batch"){
-   const {key,topic,direction,count,references}=await request.json();
+   const {key,topic,direction,count,references,keywords}=await request.json();
    if(!key||!topic)throw new Error("Gemini key and topic are required.");
    if(!Array.isArray(references)||!references.length)throw new Error("Select research references before generating.");
    const n=Math.min(10,Math.max(1,Number(count)||5));
    const items=references.slice(0,15).map(v=>({title:String(v.title||"").slice(0,350),url:String(v.url||"").slice(0,300),views:Number.isFinite(Number(v.views))&&v.views!==null?Number(v.views):null,likes:Number.isFinite(Number(v.likes))&&v.likes!==null?Number(v.likes):null}));
-   const instruction="You are writing ORIGINAL educational short videos, not remakes. Produce EXACTLY "+n+" distinct videos for topic "+String(topic).slice(0,250)+". Creative direction: "+String(direction||"").slice(0,900)+". Base ideas on these real video reference records. Do not claim vidiq scores or invent research metrics. Pick concepts with strong visual hooks and report no fictional facts, dates or dimensions. Avoid unsupported specifics when you cannot independently verify them. For each return title, exact spoken narration script approximately 90-115 words, detailed visual prompt for 9:16 original 3D scenes, separate stylePrompt, referenceUrl copied verbatim from a provided reference where possible, seo with compelling YouTube title <=100 characters, accurate YouTube description, one discoverable primary keyword and 6-12 relevant tags. No reuse of source scripts or footage. Use plain English. Return a JSON object matching schema. References: "+JSON.stringify(items);
+   const instruction="You are writing ORIGINAL educational short videos, not remakes. Produce EXACTLY "+n+" distinct videos for topic "+String(topic).slice(0,250)+". Creative direction: "+String(direction||"").slice(0,900)+". Base ideas on these real video reference records. Do not claim vidiq scores or invent research metrics. Pick concepts with strong visual hooks and report no fictional facts, dates or dimensions. Avoid unsupported specifics when you cannot independently verify them. For each return title, exact spoken narration script approximately 90-115 words, detailed visual prompt for 9:16 original 3D scenes, separate stylePrompt, referenceUrl copied verbatim from a provided reference where possible, seo with compelling YouTube title <=100 characters, accurate YouTube description, one discoverable primary keyword and 6-12 relevant tags. No reuse of source scripts or footage. Use plain English. Return a JSON object matching schema. vidIQ keyword ideas: "+JSON.stringify(Array.isArray(keywords)?keywords.slice(0,15):[])+". References: "+JSON.stringify(items);
    const generated=await geminiStructured(key,[{type:"text",text:instruction}],batchResearchSchema);
    if(!Array.isArray(generated.videos)||!generated.videos.length)throw new Error("Gemini returned no videos.");
    const urls=new Set(items.map(v=>v.url).filter(Boolean));
