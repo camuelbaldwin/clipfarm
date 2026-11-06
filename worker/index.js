@@ -27,7 +27,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <body><div class="shell">
 <header class="top"><div class="brand"><div class="mark">CF</div><div><strong>CLIP FARM STUDIO</strong><small>One workspace. One production line.</small></div></div><div class="status-pill"><i class="dot" id="topDot"></i><span id="topStatus">Connect your providers to start</span></div></header>
 <section class="hero"><div><div class="eyebrow">Your prompt production workspace</div><h1>Find the video.<br>Analyze it. Build your prompt.</h1><p>Search by topic, niche, or keyword—or paste a public social-media link. Study the video, make an editable prompt, and optionally render a rough cut.</p></div></section>
-<div class="tabs"><button class="tab on" data-tab="discover">Find videos</button><button class="tab" data-tab="analyze">Analyze + prompt</button><button class="tab" data-tab="keywords">SEO keywords</button><button class="tab" data-tab="batch">Batch Production</button></div>
+<div class="tabs"><button class="tab on" data-tab="discover">Find videos</button><button class="tab" data-tab="analyze">Analyze + prompt</button><button class="tab" data-tab="keywords">SEO keywords</button><button class="tab" data-tab="batch">Batch Production</button><button class="tab" data-tab="pipeline">Research → Publish</button></div>
 <div class="grid"><main class="main">
 <section class="card tab-panel on" id="discoverPanel"><div class="cardhead"><div><h2>Find videos by topic, niche, or keyword</h2><p>Search short-form videos across YouTube Shorts, Instagram Reels, and TikTok. The index matches the topic to video text; sort by best match, likes, or recency, then inspect the video description and public metrics.</p></div><div class="number">1</div></div>
 <div class="row"><div class="field"><label for="videoSearchQuery">What videos are you looking for?</label><input class="input" id="videoSearchQuery" placeholder="e.g. fire safety myths explained"></div><div class="field"><label for="videoSort">Sort results</label><select id="videoSort"><option value="relevance">Best match</option><option value="popular">Most liked</option><option value="recent">Most recent</option></select></div></div>
@@ -48,6 +48,16 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="actions"><button class="btn ghost" id="copyBtn">Copy prompt</button><button class="btn ghost" id="savePromptBtn">Save prompt</button><button class="btn primary" id="renderBtn">Estimate and render rough cut</button></div><div class="tiny" id="renderInfo" style="margin-top:9px">The app shows estimated Revid credits and asks before starting a render.</div></section>
 <section class="card result" id="renderCard"><div class="cardhead"><div><h2>4 · Draft preview</h2><p>Render status and video preview.</p></div><div class="number">4</div></div><div class="tiny" id="renderStatus"></div><video id="draftVideo" class="preview" controls style="display:none"></video><div class="actions"><button class="btn ghost" id="refreshBtn">Refresh status</button><a class="btn ghost" id="openDraft" target="_blank" rel="noreferrer" style="display:none">Open rendered video</a></div></section>
 </div>
+<section class="card tab-panel" id="pipelinePanel">
+<div class="cardhead"><div><h2>Research → Script → Revid → YouTube</h2><p>Produce an original five-video batch inside Clip Farm. No Make scenario or JSON download.</p></div><div class="number">P</div></div>
+<div class="notice">Research uses Revid's indexed public videos and reported views/likes—not vidIQ's breakout scores. Metrics may be absent or delayed. Gemini drafts scripts, visual prompts and SEO. Check factual claims before rendering. Publishing always requires your approval.</div>
+<div class="row"><div class="field"><label for="pipelineTopic">Channel niche / research topic</label><input class="input" id="pipelineTopic" value="building engineering explained" placeholder="e.g. expensive building failures"></div><div class="field"><label for="pipelineCount">Draft videos</label><select id="pipelineCount"><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div></div>
+<div class="field"><label for="pipelineDirection">Creative direction</label><textarea id="pipelineDirection">Original educational Shorts with a startling visual hook, technically careful explanations, realistic 3D cutaways, 35–45 seconds, clear narration and large captions. Focus on physical mechanisms rather than trivia.</textarea></div>
+<div class="actions"><button class="btn primary" id="pipelineResearch">1 · Find reference videos</button><button class="btn ghost" id="pipelineGenerate" disabled>2 · Generate scripts + SEO</button><button class="btn ghost" id="pipelineQueue" disabled>3 · Send drafts to Batch Production</button></div>
+<div class="tiny" id="pipelineStatus" role="status" aria-live="polite" style="margin:12px 0">Connect Revid and Gemini in API connections. Research first; generation does not start a paid Revid render.</div>
+<div class="videolist" id="pipelineRefs"></div>
+<h3 style="font-size:14px;margin-top:18px">Generated videos</h3><div class="videolist" id="pipelineDrafts"><span class="tiny">No drafts yet.</span></div>
+</section>
 <section class="card tab-panel" id="batchPanel">
 <div class="cardhead"><div><h2>Batch Production · Revid</h2><p>Import video scripts, estimate the cost, render up to five simultaneously, review each result, and explicitly approve YouTube publishing.</p></div><div class="number">B</div></div>
 <div class="notice good"><b>How to use:</b> 1. Save + test your Revid key in API connections. 2. Import a JSON batch file (or paste JSON). 3. Estimate credits. 4. Review the total and press Start batch. 5. Keep Clip Farm open until the queue finishes. 6. Preview, approve and publish to YouTube when ready.</div>
@@ -89,7 +99,7 @@ function parse(s){
 function out(x){if(x==null)return"";if(typeof x==="string")return x;if(Array.isArray(x))return x.map(out).filter(Boolean).join("\n");if(typeof x!=="object")return String(x);for(const k of ["output_text","text"])if(typeof x[k]==="string"&&x[k].trim())return x[k];for(const k of ["output","outputs","content","parts"])if(x[k]!=null){const v=out(x[k]);if(v)return v}return""}
 function err(e){say("Action failed · "+e.message);alert(e.message)}
 const fmt=x=>x==null||x===""?"—":Number(x).toLocaleString(),fmtMetric=x=>x==null||x===""?"Not publicly available":fmt(x);
-function showTab(name){document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));$("discoverPanel").classList.toggle("on",name==="discover");$("analysisPanel").classList.toggle("on",name==="analyze");$("keywordPanel").classList.toggle("on",name==="keywords");$("batchPanel").classList.toggle("on",name==="batch")}
+function showTab(name){document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));$("discoverPanel").classList.toggle("on",name==="discover");$("analysisPanel").classList.toggle("on",name==="analyze");$("keywordPanel").classList.toggle("on",name==="keywords");$("batchPanel").classList.toggle("on",name==="batch");$("pipelinePanel").classList.toggle("on",name==="pipeline")}
 function descriptionOf(v){let t=v.description||v.caption||v.summary||"";if(typeof t==="string"&&t.trim())return t;if(Array.isArray(t))return t.map(x=>typeof x==="string"?x:(x.text||x.content||"")).filter(Boolean).join("\n");if(t&&typeof t==="object")return t.text||t.content||"";return""}
 function showSelected(v){S.selected=v;$("youtubePreview").style.display="none";$("youtubePreview").removeAttribute("src");let e=v.engagement||{},a=v.author||{},sty=v.style||{},description=descriptionOf(v);$("sourcePreview").style.display=v.videoUrl?"block":"none";if(v.videoUrl){$("sourcePreview").src=v.videoUrl;$("sourcePreview").onloadedmetadata=()=>{$("metaDuration").textContent=Math.round($("sourcePreview").duration)+" sec"}}$("metaFile").textContent=v.description||v.summary||a.nickname||v.platform||"Selected video";$("metaState").textContent=v.platform||"Discovered";$("metaDuration").textContent=v.durationInSeconds?Math.round(v.durationInSeconds)+" sec":"—";$("selectedStats").innerHTML=[["VIEWS",fmt(e.views)],["LIKES",fmt(e.likes)],["COMMENTS",fmt(e.comments)],["SHARES",fmt(e.shares)],["ENGAGEMENT",e.engagementRate==null?"—":(e.engagementRate*100).toFixed(2)+"%"],["STYLE",[sty.mood,sty.shootingStyle].filter(Boolean).join(" · ")||"—"]].map(x=>'<div class="analysis-part"><b>'+esc(x[0])+'</b><p>'+esc(x[1])+'</p></div>').join("");$("selectedDescription").style.display=description?"block":"none";$("descriptionText").textContent=description;if(v.url){$("postLink").href=v.url;$("postLink").style.display="block"}else $("postLink").style.display="none";document.querySelectorAll("[data-video-id]").forEach(x=>x.classList.toggle("selected",x.dataset.videoId===v.id))}
 function drawVideos(videos){S.results=videos||[];$("videoResults").innerHTML=S.results.map((v,i)=>{let e=v.engagement||{},a=v.author||{},title=v.summary||v.description||v.hook||"Video reference",url=v.url||"#";return'<article class="videoresult" data-video-id="'+esc(v.id||String(i))+'"><img src="'+esc(v.thumbnailUrl||"")+'" alt=""><div><span class="platformtag">'+esc((v.platform||"video").toUpperCase())+'</span><span class="platformtag">'+esc(v.engagementTier||"indexed")+'</span><h3>'+esc(title.slice(0,145))+'</h3><p>'+esc(a.nickname||a.username||"")+' · '+esc(v.postedAt||"")+'</p><div class="statsrow"><span>'+fmt(e.views)+' views</span><span>'+fmt(e.likes)+' likes</span><span>'+fmt(e.comments)+' comments</span><span>'+fmt(e.shares)+' shares</span></div></div><div class="actions"><button class="btn small ghost" data-action="preview" data-index="'+i+'">Preview</button><button class="btn small primary" data-action="analyze" data-index="'+i+'" '+(v.videoUrl?"":"disabled")+'>Analyze</button><a class="btn small ghost" href="'+esc(url)+'" target="_blank" rel="noreferrer">Open post</a></div></article>'}).join("")||'<div class="tiny">No matching videos returned. Try a broader topic or another platform.</div>';if(S.results.length)showSelected(S.results[0])}
@@ -290,6 +300,64 @@ $("batchStart").onclick=async()=>{
  await Promise.all(Array.from({length:Math.min(concurrency,selected.length)},()=>worker()));
  batchRunning=false;batchDraw();say(batchStop?"Batch paused. Active jobs were monitored; inspect any Needs review items.":"Batch completed. Review generated videos before approving.");
 };
+
+const PIPELINE_STORE="clipfarm-research-drafts-v1";
+let pipelineRefs=[],pipelineDrafts=[];
+function pipelineSave(){try{localStorage.setItem(PIPELINE_STORE,JSON.stringify({refs:pipelineRefs,drafts:pipelineDrafts,topic:$("pipelineTopic").value,direction:$("pipelineDirection").value}))}catch(e){}}
+function pipelineRefUrl(v){const u=String(v.url||v.postUrl||v.post_url||"");return batchSafeUrl(u)}
+function pipelineScore(v){const m=v.engagement||{};const views=Number(m.views??v.views)||0,likes=Number(m.likes??v.likes)||0;return views?Math.log10(views+1)*100+100*likes/Math.max(views,1):0}
+function pipelineDraw(){
+ $("pipelineGenerate").disabled=!pipelineRefs.some(v=>v.selected);
+ $("pipelineQueue").disabled=!pipelineDrafts.some(v=>v.selected);
+ $("pipelineRefs").innerHTML=pipelineRefs.map((v,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-pref="'+i+'" '+(v.selected?"checked":"")+'> <strong>'+esc(String(v.summary||v.description||v.hook||"Reference video").slice(0,170))+'</strong></label><span class="badge">'+esc(v.platform||"video")+'</span></div><p class="tiny">'+fmtMetric(v.engagement?.views??v.views)+' views · '+fmtMetric(v.engagement?.likes??v.likes)+' likes · '+esc(v.author?.nickname||v.author?.username||"")+'</p>'+(pipelineRefUrl(v)?'<a href="'+esc(pipelineRefUrl(v))+'" target="_blank" rel="noreferrer">Open original reference</a>':'')+'</div>').join("")||'<span class="tiny">No references. Search to begin.</span>';
+ $("pipelineDrafts").innerHTML=pipelineDrafts.map((v,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-pdraft="'+i+'" '+(v.selected?"checked":"")+'> <strong>'+esc(v.seo?.title||v.title)+'</strong></label></div><p class="tiny">Keyword: '+esc(v.seo?.primaryKeyword||"—")+' · '+(v.seo?.tags?.length||0)+' tags</p><p>'+esc(v.script.slice(0,270))+(v.script.length>270?"…":"")+'</p><div class="actions"><button class="btn small ghost" data-pedit="'+i+'">Edit script / visuals / SEO</button>'+(v.referenceUrl?'<a class="btn small ghost" href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a>':'')+'</div></div>').join("")||'<span class="tiny">Generate a batch from selected references.</span>';
+}
+$("pipelineRefs").onchange=e=>{const i=e.target.dataset.pref;if(i===undefined)return;pipelineRefs[Number(i)].selected=e.target.checked;pipelineSave();pipelineDraw()};
+$("pipelineDrafts").onchange=e=>{const i=e.target.dataset.pdraft;if(i===undefined)return;pipelineDrafts[Number(i)].selected=e.target.checked;pipelineSave();pipelineDraw()};
+$("pipelineDrafts").onclick=e=>{const i=e.target.dataset.pedit;if(i===undefined)return;const v=pipelineDrafts[Number(i)];
+ const title=prompt("SEO title (up to 100 characters)",v.seo.title);if(title===null)return;
+ const script=prompt("Narration script",v.script);if(script===null)return;
+ const visual=prompt("Visual prompt",v.prompt);if(visual===null)return;
+ const description=prompt("YouTube description",v.seo.description);if(description===null)return;
+ const tags=prompt("Tags, separated by commas",v.seo.tags.join(", "));if(tags===null)return;
+ if(!title.trim()||!script.trim())return alert("Title and script are required.");
+ v.title=title.trim();v.script=script.trim();v.prompt=visual.trim();v.seo={...v.seo,title:title.trim(),description:description.trim(),tags:tags.split(",").map(x=>x.trim()).filter(Boolean)};v.seoTitle=v.seo.title;v.seoDescription=v.seo.description;v.primaryKeyword=v.seo.primaryKeyword;v.tags=v.seo.tags;pipelineSave();pipelineDraw();
+};
+$("pipelineResearch").onclick=async()=>{
+ const k=keys(),topic=$("pipelineTopic").value.trim();if(!topic)return alert("Enter a research topic.");if(!k.revid)return alert("Add your Revid API key in API connections.");
+ const b=$("pipelineResearch");b.disabled=true;$("pipelineStatus").textContent="Searching Revid's public-video index for original reference opportunities…";
+ try{
+  const d=await api("/api/revid/search",{key:k.revid,query:topic,platforms:["youtube"],sort:"popular",limit:20,viralOnly:true});
+  const refs=(d.videos||[]).filter(v=>v&&typeof v==="object").sort((a,b)=>pipelineScore(b)-pipelineScore(a));
+  pipelineRefs=refs.map((v,i)=>({...v,selected:i<Math.min(10,refs.length)}));pipelineDrafts=[];
+  $("pipelineStatus").textContent=refs.length+" references found. Select relevant examples before generating; views and likes are reported by the provider, not independent vidIQ scores.";
+  pipelineSave();pipelineDraw();if(!refs.length)alert("No public reference results for this topic. Try a broader phrase.");
+ }catch(e){$("pipelineStatus").textContent=e.message;err(e)}finally{b.disabled=false}
+};
+$("pipelineGenerate").onclick=async()=>{
+ const k=keys(),count=Number($("pipelineCount").value),selected=pipelineRefs.filter(v=>v.selected);
+ if(!k.gemini)return alert("Save a Gemini API key in API connections to generate scripts and SEO.");
+ if(!selected.length)return alert("Select at least one reference video.");
+ const b=$("pipelineGenerate");b.disabled=true;$("pipelineStatus").textContent="Generating original scripts, visual plans and metadata from "+selected.length+" reference records…";
+ try{
+  const refs=selected.slice(0,15).map(v=>({url:pipelineRefUrl(v),title:String(v.summary||v.description||v.hook||"").slice(0,350),views:v.engagement?.views??v.views??null,likes:v.engagement?.likes??v.likes??null,platform:v.platform||"youtube"}));
+  const d=await api("/api/gemini/research-batch",{key:k.gemini,topic:$("pipelineTopic").value.trim(),direction:$("pipelineDirection").value.trim(),count,references:refs});
+  pipelineDrafts=batchRead(d.videos).map(v=>({...v,seo:{title:v.seoTitle,description:v.seoDescription,primaryKeyword:v.primaryKeyword,tags:v.tags},referenceUrl:batchSafeUrl(v.referenceUrl),selected:true}));
+  $("pipelineStatus").textContent=pipelineDrafts.length+" drafts generated. Inspect scripts and claims, edit metadata, then send to the rendering queue.";
+  pipelineSave();pipelineDraw();
+ }catch(e){$("pipelineStatus").textContent=e.message;err(e)}finally{b.disabled=false;pipelineDraw()}
+};
+$("pipelineQueue").onclick=()=>{
+ if(batchRunning)return alert("Finish the active batch before replacing its queue.");
+ const selected=pipelineDrafts.filter(v=>v.selected);if(!selected.length)return alert("Select at least one generated draft.");
+ if(batchJobs.some(v=>["Rendering","Submitting"].includes(v.status)))return alert("Current Revid renders are still active. Finish those before replacing the queue.");
+ if(batchJobs.length&&!confirm("Replace the current Batch Production queue with "+selected.length+" researched drafts? Existing queue statuses will be replaced."))return;
+ batchJobs=batchRead(selected.map(v=>({...v,seo:{title:v.seoTitle||v.seo?.title||v.title,description:v.seoDescription||v.seo?.description||"",primaryKeyword:v.primaryKeyword||v.seo?.primaryKeyword||"",tags:v.tags||v.seo?.tags||[]}})));
+ batchInvalidate();showTab("batch");say("Research drafts transferred to Batch Production. Estimate credits before rendering.");
+};
+try{const d=JSON.parse(localStorage.getItem(PIPELINE_STORE)||"null");if(d&&typeof d==="object"){pipelineRefs=Array.isArray(d.refs)?d.refs:[];pipelineDrafts=Array.isArray(d.drafts)?d.drafts:[];if(d.topic)$("pipelineTopic").value=d.topic;if(d.direction)$("pipelineDirection").value=d.direction}}catch(e){}
+pipelineDraw();
+
 try{const saved=JSON.parse(localStorage.getItem(BATCH_STORE)||"[]");if(Array.isArray(saved))batchJobs=saved.map(x=>({...batchDefaults,...x,selected:false}))}catch(e){}batchDraw();
 
 $("trendBtn").onclick=async()=>{
@@ -352,6 +420,7 @@ async function geminiGenerate(key,input,schema){
 }
 const analysisSchema={type:"object",properties:{summary:{type:"string"},duration_seconds:{type:"number"},hook:{type:"string"},structure:{type:"array",items:{type:"object",properties:{timestamp:{type:"string"},beat:{type:"string"}},required:["timestamp","beat"]}},pacing:{type:"string"},shot_and_cut_pattern:{type:"string"},captions_and_text:{type:"string"},audio:{type:"string"},transitions:{type:"string"},visual_style:{type:"string"},ending:{type:"string"},reusable_techniques:{type:"array",items:{type:"string"}}},required:["summary","duration_seconds","hook","structure","pacing","shot_and_cut_pattern","captions_and_text","audio","transitions","visual_style","ending","reusable_techniques"]};
 const promptSchema={type:"object",properties:{prompt:{type:"string"},stylePrompt:{type:"string"},script:{type:"string"}},required:["prompt","stylePrompt","script"]};
+const batchResearchSchema={type:"object",properties:{videos:{type:"array",items:{type:"object",properties:{title:{type:"string"},script:{type:"string"},prompt:{type:"string"},stylePrompt:{type:"string"},referenceUrl:{type:"string"},seo:{type:"object",properties:{title:{type:"string"},description:{type:"string"},primaryKeyword:{type:"string"},tags:{type:"array",items:{type:"string"}}},required:["title","description","primaryKeyword","tags"]}},required:["title","script","prompt","stylePrompt","referenceUrl","seo"]}}},required:["videos"]};
 const variantsSchema={type:"object",properties:{variants:{type:"array",items:{type:"object",properties:{title:{type:"string"},angle:{type:"string"},hook:{type:"string"},script:{type:"string"},difference:{type:"string"}},required:["title","angle","hook","script","difference"]}}},required:["variants"]};
 function geminiText(x){if(x==null)return"";if(typeof x==="string")return x;if(Array.isArray(x))return x.map(geminiText).filter(Boolean).join("\n");if(typeof x!=="object")return String(x);for(const k of ["output_text","text"])if(typeof x[k]==="string"&&x[k].trim())return x[k];for(const k of ["output","outputs","content","parts","steps"])if(x[k]!=null){const t=geminiText(x[k]);if(t)return t}return""}
 function parseGeminiJson(raw){let s=String(raw||"").trim(),f=s.match(/```(?:json)?\s*([\s\S]*?)```/i);if(f)s=f[1].trim();try{return JSON.parse(s)}catch{}for(let a=0;a<s.length;a++){if(s[a]!=="{"&&s[a]!=="[")continue;let stack=[],quoted=false,escape=false;for(let i=a;i<s.length;i++){const c=s[i];if(quoted){if(escape)escape=false;else if(c==="\\")escape=true;else if(c==='"')quoted=false;continue}if(c==='"'){quoted=true;continue}if(c==="{"||c==="[")stack.push(c);else if(c==="}"||c==="]"){const open=stack.pop();if((open==="{"&&c!=="}")||(open==="["&&c!=="]"))break;if(!stack.length){try{return JSON.parse(s.slice(a,i+1))}catch{break}}}}}throw new Error("No valid JSON object found")}
@@ -360,6 +429,23 @@ export default {async fetch(request){
  const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
  if(request.method==="GET"&&url.pathname==="/")return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});
  try{
+  if(request.method==="POST"&&url.pathname==="/api/gemini/research-batch"){
+   const {key,topic,direction,count,references}=await request.json();
+   if(!key||!topic)throw new Error("Gemini key and topic are required.");
+   if(!Array.isArray(references)||!references.length)throw new Error("Select research references before generating.");
+   const n=Math.min(10,Math.max(1,Number(count)||5));
+   const items=references.slice(0,15).map(v=>({title:String(v.title||"").slice(0,350),url:String(v.url||"").slice(0,300),views:Number.isFinite(Number(v.views))&&v.views!==null?Number(v.views):null,likes:Number.isFinite(Number(v.likes))&&v.likes!==null?Number(v.likes):null}));
+   const instruction="You are writing ORIGINAL educational short videos, not remakes. Produce EXACTLY "+n+" distinct videos for topic "+String(topic).slice(0,250)+". Creative direction: "+String(direction||"").slice(0,900)+". Base ideas on these real video reference records. Do not claim vidiq scores or invent research metrics. Pick concepts with strong visual hooks and report no fictional facts, dates or dimensions. Avoid unsupported specifics when you cannot independently verify them. For each return title, exact spoken narration script approximately 90-115 words, detailed visual prompt for 9:16 original 3D scenes, separate stylePrompt, referenceUrl copied verbatim from a provided reference where possible, seo with compelling YouTube title <=100 characters, accurate YouTube description, one discoverable primary keyword and 6-12 relevant tags. No reuse of source scripts or footage. Use plain English. Return a JSON object matching schema. References: "+JSON.stringify(items);
+   const generated=await geminiStructured(key,[{type:"text",text:instruction}],batchResearchSchema);
+   if(!Array.isArray(generated.videos)||!generated.videos.length)throw new Error("Gemini returned no videos.");
+   const urls=new Set(items.map(v=>v.url).filter(Boolean));
+   const videos=generated.videos.slice(0,n).map((v,i)=>{
+    if(!v.script||!v.seo?.title)throw new Error("Generated video "+(i+1)+" is missing its script or SEO title.");
+    const original=urls.has(v.referenceUrl)?v.referenceUrl:"";
+    return {title:String(v.title||v.seo.title).slice(0,180),script:String(v.script).slice(0,3000),prompt:String(v.prompt||"").slice(0,5000),stylePrompt:String(v.stylePrompt||"").slice(0,1400),referenceUrl:original,seo:{title:String(v.seo.title).slice(0,100),description:String(v.seo.description||"").slice(0,5000),primaryKeyword:String(v.seo.primaryKeyword||"").slice(0,200),tags:Array.isArray(v.seo.tags)?v.seo.tags.map(String).slice(0,25):[]}};
+   });
+   return json({videos,source:"Gemini drafts from selected Revid-index references; metadata not independently validated"});
+  }
   if(request.method==="POST"&&url.pathname==="/api/gemini/check"){
    const {key}=await request.json();const d=await geminiGenerate(key,[{type:"text",text:"Reply with exactly OK."}]);return json({ok:true,reply:JSON.stringify(d).slice(0,200)});
   }
