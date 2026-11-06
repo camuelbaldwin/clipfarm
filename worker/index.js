@@ -67,6 +67,13 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="field"><label for="batchMode">Production mode</label><select id="batchMode"><option value="script-to-video">Exact narration · Revid chooses visuals</option><option value="prompt-to-video">Detailed visuals · Revid may rewrite narration</option></select><small>Revid script-to-video accepts the exact spoken script, but not a separate scene prompt. Choose visual-direction mode to send your detailed visual prompt; Revid may rewrite the narration.</small></div><div class="row"><div class="field"><label for="batchStyle">Video style</label><select id="batchStyle"><option value="ai-video">AI visuals · Pro</option><option value="motion-graphics">Motion graphics</option><option value="stock-video">Stock footage</option><option value="anime">Anime</option></select></div><div class="field"><label for="batchResolution">Render resolution</label><select id="batchResolution"><option value="720p">720p</option><option value="1080p">1080p</option></select></div></div>
 <div class="field"><label for="batchConcurrency">Simultaneous Revid jobs</label><select id="batchConcurrency"><option value="1">1 at a time · safest</option><option value="2">2 at once</option><option value="3">3 at once</option><option value="5" selected>5 at once · depends on Revid account limits</option></select><small>Separate videos are submitted as separate Revid jobs. Parallel rendering may be rate-limited by Revid. Your credits are estimated for all selected jobs.</small></div><div class="actions"><button class="btn" id="batchImport">Import / replace queue</button><button class="btn" id="batchEstimate">Estimate selected credits</button><button class="btn primary" id="batchStart" disabled>Start selected renders</button><button class="btn ghost" id="batchStop" disabled>Stop submitting new jobs</button></div>
 <div class="tiny" id="batchSummary" style="margin:12px 0">No videos imported. Revid credits are charged only when a render is submitted.</div>
+<section class="card" style="margin:16px 0;background:#16121e">
+<h3 style="margin:0 0 4px">Use videos already made in Revid</h3>
+<p class="tiny">Connect an existing Revid project to one of our five researched SEO packages. It does not render a new video or spend generation credits.</p>
+<div class="actions"><button class="btn ghost" id="existingLoadProjects">Load my Revid videos</button><button class="btn ghost" id="existingLoadSeo">Load our 5 SEO packages</button></div>
+<div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
+<div class="videolist" id="existingProjects" style="margin-top:10px"></div>
+</section>
 <div class="field"><label>Revid-connected YouTube account</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Connect your YouTube channel in Revid. Publishing requires per-video approval.</small></div><div class="videolist" id="batchList"></div>
 </section><section class="card tab-panel" id="keywordPanel"><div class="cardhead"><div><h2>Google keyword metrics</h2><p>Enter a keyword to see estimated monthly searches, historical volume, competition, bids, and related keyword ideas.</p></div><div class="number">K</div></div><div class="row"><div class="field"><label for="keyword">Keyword or topic</label><input class="input" id="keyword" placeholder="e.g. perfume layering"></div><div class="field"><label for="location">Search location</label><select id="location"><option value="United States">United States</option><option value="Worldwide">Worldwide</option><option value="United Kingdom">United Kingdom</option><option value="Canada">Canada</option><option value="Australia">Australia</option><option value="India">India</option></select></div></div><div class="actions"><button class="btn primary" id="trendBtn">Get keyword metrics</button></div><div class="result" id="trendResult" style="margin-top:14px"><div class="analysis-grid"><div class="analysis-part"><b>AVG. MONTHLY SEARCHES</b><p id="searchVolume">Not available</p></div><div class="analysis-part"><b>ADS COMPETITION</b><p id="adsCompetition">Not available</p></div><div class="analysis-part"><b>COMPETITION INDEX</b><p id="competitionIndex">Not available</p></div><div class="analysis-part"><b>TOP-OF-PAGE BID RANGE</b><p id="bidRange">Not available</p></div></div><div id="trendChart" style="display:flex;align-items:end;height:130px;gap:3px;margin-top:14px"></div><div id="trendDates" class="tiny"></div><div class="field"><label>Related keyword ideas</label><div id="relatedList"></div></div><div class="tiny" id="trendNote"></div></div><div class="notice good" style="margin-top:13px">Google Ads API keyword research is free to call. This feature only reads estimates; it never creates ads or spends campaign budget. Add Google OAuth credentials and a Google Ads customer ID in API connections. Metrics are Google Search estimates; the competition score describes ad placement competition, not organic ranking difficulty.</div></section>
 </main><aside class="rail">
@@ -163,7 +170,7 @@ $("refreshBtn").onclick=poll;
 
 /* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
 const BATCH_STORE="clipfarm-batch-v1";
-let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;
+let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[];
 const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishResult:null};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
@@ -226,6 +233,69 @@ $("batchList").onclick=async e=>{
  const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");
  j.script=next;j.status="Ready";j.pid="";j.videoUrl="";j.approved=false;j.publishStatus="";j.youtubeUrl="";batchInvalidate();
 };
+
+function existingProjectsNormalize(raw){
+ const root=raw?.data??raw;
+ const candidates=Array.isArray(root)?root:(root?.projects||root?.items||root?.results||root?.data?.projects||root?.data?.items||[]);
+ if(!Array.isArray(candidates))throw Error("Revid returned an unfamiliar projects format; no changes were made.");
+ return candidates.map(p=>({
+  pid:String(p.pid||p.projectId||p.project_id||p.id||""),
+  name:String(p.name||p.title||p.projectName||p.project_title||p.metadata?.title||"Untitled Revid project"),
+  status:String(p.status||p.state||p.renderStatus||"").toLowerCase(),
+  videoUrl:batchSafeUrl(p.videoUrl||p.video_url||p.mp4Url||p.exportUrl||p.url||""),
+  original:p
+ })).filter(p=>p.pid);
+}
+function existingDrawProjects(){
+ const choices=PREPARED_FIVE.map((p,i)=>'<option value="'+i+'">'+esc(p.seo.title)+'</option>').join("");
+ $("existingProjects").innerHTML=existingProjects.map((p,i)=>'<div class="variant"><div class="varianttop"><strong>'+esc(p.name)+'</strong><span class="badge">'+esc(p.status||"Status unknown")+'</span></div>'+
+ '<p class="tiny">Revid project: '+esc(p.pid)+'</p>'+
+ (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview existing video</a>':'')+
+ '<div class="field"><label for="existingMatch'+i+'">Match to researched YouTube SEO</label><select id="existingMatch'+i+'" class="input"><option value="">Select matching topic</option>'+choices+'</select></div>'+
+ '<div class="actions"><button class="btn small primary" data-existing-match="'+i+'">Attach video + metadata</button></div></div>').join("")||'<span class="tiny">No existing Revid projects found.</span>';
+}
+$("existingLoadSeo").onclick=()=>{
+ if(!batchJobs.some(j=>j.research?.source==="vidIQ")&&batchJobs.length&&!confirm("Replace the current unrendered queue with our five researched SEO packages?"))return;
+ if(batchJobs.some(j=>j.status==="Rendering"||j.status==="Submitting"))return alert("Existing renders are active. Finish them before changing this queue.");
+ batchJobs=batchRead(PREPARED_FIVE).map((v,i)=>({...v,research:PREPARED_FIVE[i].research,selected:false}));
+ batchInvalidate();$("existingStatus").textContent="Five original SEO packages loaded. No Revid rendering started. Choose an existing Revid video and match it.";
+};
+$("existingLoadProjects").onclick=async()=>{
+ const key=keys().revid;if(!key)return alert("Save a Revid API key first.");
+ const b=$("existingLoadProjects");b.disabled=true;$("existingStatus").textContent="Loading existing projects from your Revid account…";
+ try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects found. Match each to the correct SEO package. Nothing will be published until you approve."}
+ catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
+ finally{b.disabled=false}
+};
+$("existingProjects").onclick=async e=>{
+ const button=e.target.closest("[data-existing-match]");if(!button)return;
+ const p=existingProjects[Number(button.dataset.existingMatch)],select=$("existingMatch"+button.dataset.existingMatch);
+ const index=Number(select?.value);if(!select?.value||!Number.isInteger(index)||!PREPARED_FIVE[index])return alert("Choose the correct SEO topic for this Revid video.");
+ if(!keys().revid)return alert("Save your Revid API key first.");
+ if(batchRunning)return alert("Finish the active batch before attaching an existing video.");
+ if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ")&& !confirm("Replace the current batch with our five researched SEO packages?"))return;
+ const selected=PREPARED_FIVE[index];
+ if(!confirm('Match Revid video "'+p.name+'" with the SEO package "'+selected.seo.title+'"? No new video will be rendered.'))return;
+ button.disabled=true;$("existingStatus").textContent="Verifying the existing Revid video has finished exporting…";
+ try{
+  const x=await api("/api/revid/status",{key:keys().revid,pid:p.pid}),d=x.data||x;
+  const status=String(d.status||d.state||p.status||"").toLowerCase();
+  const url=batchSafeUrl(d.videoUrl||d.video_url||d.url||p.videoUrl);
+  if(!url||["failed","error","rendering","queued","processing","pending"].includes(status))throw Error("This Revid project doesn't yet have a finished video URL. Finish/export it in Revid and reload projects.");
+  if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ"))batchJobs=[];
+  const existing=batchJobs.find(j=>j.research?.source==="vidIQ"&&j.seoTitle===selected.seo.title);
+  const already=batchJobs.find(j=>j.pid===p.pid&&j!==existing);
+  if(already)throw Error("This Revid video is already attached to another SEO package.");
+  if(existing?.pid&&existing.pid!==p.pid&&!confirm("Replace the video currently linked to this SEO package?"))return;
+  const item=batchRead([selected])[0];
+  Object.assign(item,{research:selected.research,selected:false,status:"Complete",pid:p.pid,videoUrl:url,credits:0,approved:false,publishStatus:"",youtubeUrl:"",error:""});
+  if(existing){const at=batchJobs.indexOf(existing);batchJobs[at]=item}else batchJobs.push(item);
+  batchEstimated=false;batchPersist();batchDraw();
+  $("existingStatus").textContent="Linked "+p.name+" to its researched YouTube title, description and tags. Preview and approve to publish. No render credits used.";
+  say("Existing Revid video matched to researched SEO.");
+ }catch(err){$("existingStatus").textContent=err.message;alert(err.message)}finally{button.disabled=false}
+};
+
 $("batchLoadAccounts").onclick=async()=>{
  const key=keys().revid;if(!key)return alert("Enter your Revid API key first.");
  try{
@@ -574,7 +644,11 @@ export default {async fetch(request){
   if(request.method==="POST"&&url.pathname==="/api/revid/render"){
    const {key,payload}=await request.json();return json(await revidRest("render",key,payload));
   }
-  if(request.method==="POST"&&url.pathname==="/api/revid/social-accounts"){
+  if(request.method==="POST"&&url.pathname==="/api/revid/projects"){
+    const {key}=await request.json();if(!key)throw new Error("Revid API key required.");
+    return json(await revidRest("projects",key));
+   }
+   if(request.method==="POST"&&url.pathname==="/api/revid/social-accounts"){
     const {key}=await request.json();if(!key)throw new Error("Revid key required.");return json(await revidRest("social-accounts",key));
    }
    if(request.method==="POST"&&url.pathname==="/api/revid/publish-now"){
