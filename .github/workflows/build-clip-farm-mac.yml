@@ -46,8 +46,7 @@ jobs:
           path: mac/release/*.dmg
           if-no-files-found: error
           retention-days: 90
-      - name: Publish direct-download release (manual builds only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Publish direct-download release after successful build
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
