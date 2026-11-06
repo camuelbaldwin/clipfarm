@@ -614,6 +614,7 @@ async function geminiGenerate(key,input,schema){
 }
 const analysisSchema={type:"object",properties:{summary:{type:"string"},duration_seconds:{type:"number"},hook:{type:"string"},structure:{type:"array",items:{type:"object",properties:{timestamp:{type:"string"},beat:{type:"string"}},required:["timestamp","beat"]}},pacing:{type:"string"},shot_and_cut_pattern:{type:"string"},captions_and_text:{type:"string"},audio:{type:"string"},transitions:{type:"string"},visual_style:{type:"string"},ending:{type:"string"},reusable_techniques:{type:"array",items:{type:"string"}}},required:["summary","duration_seconds","hook","structure","pacing","shot_and_cut_pattern","captions_and_text","audio","transitions","visual_style","ending","reusable_techniques"]};
 const promptSchema={type:"object",properties:{prompt:{type:"string"},stylePrompt:{type:"string"},script:{type:"string"}},required:["prompt","stylePrompt","script"]};
+const existingVideoSeoSchema={type:"object",properties:{title:{type:"string"},description:{type:"string"},primaryKeyword:{type:"string"},hashtags:{type:"array",items:{type:"string"}},tags:{type:"array",items:{type:"string"}}},required:["title","description","primaryKeyword","hashtags","tags"]};
 const batchResearchSchema={type:"object",properties:{videos:{type:"array",items:{type:"object",properties:{title:{type:"string"},script:{type:"string"},prompt:{type:"string"},stylePrompt:{type:"string"},referenceUrl:{type:"string"},seo:{type:"object",properties:{title:{type:"string"},description:{type:"string"},primaryKeyword:{type:"string"},tags:{type:"array",items:{type:"string"}}},required:["title","description","primaryKeyword","tags"]}},required:["title","script","prompt","stylePrompt","referenceUrl","seo"]}}},required:["videos"]};
 const variantsSchema={type:"object",properties:{variants:{type:"array",items:{type:"object",properties:{title:{type:"string"},angle:{type:"string"},hook:{type:"string"},script:{type:"string"},difference:{type:"string"}},required:["title","angle","hook","script","difference"]}}},required:["variants"]};
 function geminiText(x){if(x==null)return"";if(typeof x==="string")return x;if(Array.isArray(x))return x.map(geminiText).filter(Boolean).join("\n");if(typeof x!=="object")return String(x);for(const k of ["output_text","text"])if(typeof x[k]==="string"&&x[k].trim())return x[k];for(const k of ["output","outputs","content","parts","steps"])if(x[k]!=null){const t=geminiText(x[k]);if(t)return t}return""}
@@ -631,6 +632,22 @@ export default {async fetch(request){
    try{const result=await vidiqCall(key,"vidiq_keyword_research",{mode:"research",keyword,limit:12});keywords=parseVidIQKeywords(result)}
    catch(e){keywordError=String(e.message||e).slice(0,220)}
    return json({source:"vidIQ MCP",videos,keywords,keywordError});
+  }
+  if(request.method==="POST"&&url.pathname==="/api/seo/project"){
+   const {geminiKey,vidiqKey,projectId,projectTitle,projectText}=await request.json();
+   if(!geminiKey||!vidiqKey)throw Error("Gemini and vidIQ keys are required for researched SEO.");
+   const pid=String(projectId||"").trim(),title=String(projectTitle||"").trim().slice(0,220),source=String(projectText||"").trim().slice(0,3000);
+   if(!pid||!title||title==="Untitled Revid project")throw Error("A real Revid project ID and meaningful project title are required.");
+   const raw=await vidiqCall(vidiqKey,"vidiq_keyword_research",{mode:"research",keyword:title,limit:12});
+   const keywordIdeas=parseVidIQKeywords(raw);
+   if(!keywordIdeas.length)throw Error("vidIQ provided no parseable keyword research for this topic. No metadata was fabricated.");
+   const instructions="Create YouTube SEO for one EXISTING Revid video, not a new video. Project title: "+JSON.stringify(title)+". Source script/prompt/description if available: "+JSON.stringify(source)+". vidIQ keyword findings (provider-reported): "+JSON.stringify(keywordIdeas)+". Ground every claim strictly in the source text or conservative subject knowledge. If only a title is available do NOT describe unsupported specific scenes, examples, tests, claims or statistics; keep description topic-level and mark no false provenance. Choose a natural YouTube Shorts title <=100 characters with the top relevant keyword (no invented performance guarantees), a descriptive and accurate 2-4 sentence description, 2-4 hashtags, one primary keyword and 6-12 relevant YouTube tags. Hashtags must start with #, tags must not include #. Do not append the tags list into the description. Output structured JSON. Avoid clickbait that misrepresents the real video.";
+   const d=await geminiStructured(geminiKey,[{type:"text",text:instructions}],existingVideoSeoSchema);
+   const seoTitle=String(d.title||"").trim().slice(0,100),description=String(d.description||"").trim();
+   if(!seoTitle||!description||!Array.isArray(d.hashtags)||!Array.isArray(d.tags))throw Error("Gemini did not return complete SEO metadata.");
+   const hashtags=d.hashtags.map(v=>String(v).trim()).filter(x=>/^#[A-Za-z0-9_]+$/.test(x)).slice(0,4);
+   const cleanDescription=(description+" "+hashtags.join(" ")).trim().slice(0,5000);
+   return json({projectId:pid,revidTitle:title,seo:{title:seoTitle,description:cleanDescription,primaryKeyword:String(d.primaryKeyword||"").trim().slice(0,200),tags:d.tags.map(x=>String(x).trim().replace(/^#/,"")).filter(Boolean).slice(0,25)},research:{source:"vidIQ keyword research",keywordIdeas:keywordIdeas.slice(0,12),sourceContext:source?"Revid project content":"Revid project title only",reviewRequired:true}});
   }
   if(request.method==="POST"&&url.pathname==="/api/gemini/research-batch"){
    const {key,topic,direction,count,references,keywords}=await request.json();
