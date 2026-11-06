@@ -171,7 +171,7 @@ $("refreshBtn").onclick=poll;
 /* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[];
-const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishResult:null};
+const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
 function batchRead(input){
@@ -198,15 +198,15 @@ function batchDraw(){
  $("batchStop").disabled=!batchRunning;
  $("batchSummary").textContent=batchJobs.length+" videos imported · "+active.length+" selected · "+batchJobs.filter(j=>j.status==="Complete").length+" complete · "+batchJobs.filter(j=>j.approved).length+" approved · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
  $("batchList").innerHTML=batchJobs.map((v,i)=>{
-  const tags=Array.isArray(v.tags)?v.tags:[],published=v.publishStatus==="Submitted";
+  const tags=Array.isArray(v.tags)?v.tags:[],published=["Submitted","Published","Processing"].includes(v.publishStatus);
   return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div>'+
   '<p>Video '+(i+1)+' · Estimated credits: '+(v.credits===null?"not estimated":v.credits)+' · '+esc(v.error||"")+'</p>'+
   '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · Publish: '+esc(v.publishStatus||"Not submitted")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
-  '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> '+
+  '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
   (v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
-  (v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
+  (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
   '</div>';
  }).join("");
 }
@@ -218,7 +218,9 @@ function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,nul
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh;
+ if(copy!==undefined){const j=batchJobs[Number(copy)];try{await navigator.clipboard.writeText((j.seoTitle||j.title)+"\n\n"+j.seoDescription+"\n\nTAGS FOR YOUTUBE STUDIO: "+(j.tags||[]).join(", "));say("YouTube title, description and tags copied")}catch(e){alert(e.message)}return}
+ if(refresh!==undefined){await batchPublishStatus(Number(refresh));return}
  if(p!==undefined){await publishBatchVideo(+p);return}
  if(x!==undefined){
   if(batchRunning)return alert("Stop the batch before editing.");
@@ -304,12 +306,25 @@ $("batchLoadAccounts").onclick=async()=>{
   for(const a of (Array.isArray(raw)?raw:[])){
    if(!String(a.platform||a.type||a.network||a.provider||"").toLowerCase().includes("youtube"))continue;
    const id=String(a.id||a.accountId||a.socialAccountId||"");if(!id)continue;
-   const name=String(a.name||a.channelName||a.username||a.handle||id),opt=document.createElement("option");
+   if(a.tokenInvalid)continue;const name=String(a.label||a.name||a.channelName||a.username||a.handle||id),opt=document.createElement("option");
    opt.value=id;opt.textContent=name;opt.dataset.channelName=name;sel.appendChild(opt);
   }
   if(sel.options.length===1)alert("No connected YouTube accounts found. Connect your channel in Revid Settings → Integrations.");
  }catch(err){alert("Could not load YouTube accounts: "+err.message)}
 };
+async function batchPublishStatus(index){
+ const j=batchJobs[index];if(!j?.publishContentId)return alert("No Revid publishing ID for this video.");
+ try{
+  const x=await api("/api/revid/publish-status",{key:keys().revid,contentId:j.publishContentId});
+  const post=Array.isArray(x.platforms)?x.platforms.find(p=>p.platform==="youtube"):null;
+  const status=String(post?.status||x.status||"unknown").toLowerCase();
+  if(status==="published"){j.publishStatus="Published";j.youtubeUrl=batchSafeUrl(post?.postUrl||"");j.error=""}
+  else if(status==="failed"){j.publishStatus="Failed";j.error=String(post?.error?.message||"YouTube publishing failed.")}
+  else j.publishStatus="Processing";
+  batchPersist();batchDraw();
+  alert(j.publishStatus==="Published"?"YouTube has confirmed the video is published.":j.publishStatus==="Failed"?j.error:"Still processing at Revid. Check again shortly.");
+ }catch(e){alert("YouTube status check failed: "+e.message)}
+}
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
  if(!j||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Video must finish rendering first.");
@@ -322,10 +337,11 @@ async function publishBatchVideo(index){
  j.publishStatus="Submitting";batchPersist();batchDraw();
  try{
   const result=await api("/api/revid/publish-now",{key:keys().revid,videoUrl:j.videoUrl,pid:j.pid,
-   channelName:account.dataset.channelName||account.textContent,accountId:sel.value,title,description,tags:j.tags});
-  j.publishResult=result;j.publishStatus="Submitted";
-  j.youtubeUrl=String(result.youtubeUrl||result.url||result.postUrl||result.data?.youtubeUrl||"");
-  alert("Publishing request submitted to Revid. Verify its final status in Revid or YouTube Studio.");
+   accountId:sel.value,title,description});
+  const contentId=String(result.contentId||result.data?.contentId||"");
+  if(!contentId)throw Error("Revid returned no publishing ID. The request may already be processing; verify in Revid before retrying.");
+  j.publishResult=result;j.publishContentId=contentId;j.publishStatus="Submitted";
+  alert("Revid accepted the YouTube upload. Check the YouTube status to confirm it went live. Tags can be copied for YouTube Studio.");
  }catch(err){j.publishStatus="Needs review";j.error="Publishing: "+err.message;alert(j.error)}
  batchPersist();batchDraw();
 }
@@ -652,11 +668,15 @@ export default {async fetch(request){
     const {key}=await request.json();if(!key)throw new Error("Revid key required.");return json(await revidRest("social-accounts",key));
    }
    if(request.method==="POST"&&url.pathname==="/api/revid/publish-now"){
-    const {key,videoUrl,pid,channelName,accountId,title,description,tags}=await request.json();
+    const {key,videoUrl,pid,accountId,title,description}=await request.json();
     if(!key||!pid||!videoUrl||!accountId||!title||!description)throw new Error("Rendered video, YouTube account, title and description required.");
     if(!/^https:\/\//.test(videoUrl))throw new Error("Secure video URL required.");
-    const payload={videoUrl,channelName,youtube:{title:String(title).slice(0,100),description:String(description).slice(0,5000),tags:Array.isArray(tags)?tags.slice(0,50):[]}};
+    const payload={videoUrl,youtube:{id:String(accountId),title:String(title).slice(0,100),description:String(description).slice(0,5000)},extraParams:{title:String(title).slice(0,100),description:String(description).slice(0,5000)}};
     return json(await revidRest("publish-now",key,payload));
+   }
+   if(request.method==="POST"&&url.pathname==="/api/revid/publish-status"){
+    const {key,contentId}=await request.json();if(!key||!contentId)throw Error("Revid key and publishing ID required.");
+    return json(await revidRest("publish-status?contentId="+encodeURIComponent(contentId),key));
    }
    if(request.method==="POST"&&url.pathname==="/api/revid/status"){
    const {key,pid}=await request.json();return json(await revidRest("status?pid="+encodeURIComponent(pid),key));
