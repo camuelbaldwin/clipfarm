@@ -49,15 +49,15 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <section class="card result" id="renderCard"><div class="cardhead"><div><h2>4 · Draft preview</h2><p>Render status and video preview.</p></div><div class="number">4</div></div><div class="tiny" id="renderStatus"></div><video id="draftVideo" class="preview" controls style="display:none"></video><div class="actions"><button class="btn ghost" id="refreshBtn">Refresh status</button><a class="btn ghost" id="openDraft" target="_blank" rel="noreferrer" style="display:none">Open rendered video</a></div></section>
 </div>
 <section class="card tab-panel" id="batchPanel">
-<div class="cardhead"><div><h2>Batch Production · Revid</h2><p>Import video scripts, estimate the cost, render them one by one, then review and approve each video. Nothing is published automatically.</p></div><div class="number">B</div></div>
-<div class="notice good"><b>How to use:</b> 1. Save + test your Revid key in API connections. 2. Import a JSON batch file (or paste JSON). 3. Estimate credits. 4. Review the total and press Start batch. 5. Keep Clip Farm open until the queue finishes. 6. Preview, approve and download videos.</div>
+<div class="cardhead"><div><h2>Batch Production · Revid</h2><p>Import video scripts, estimate the cost, render up to five simultaneously, review each result, and explicitly approve YouTube publishing.</p></div><div class="number">B</div></div>
+<div class="notice good"><b>How to use:</b> 1. Save + test your Revid key in API connections. 2. Import a JSON batch file (or paste JSON). 3. Estimate credits. 4. Review the total and press Start batch. 5. Keep Clip Farm open until the queue finishes. 6. Preview, approve and publish to YouTube when ready.</div>
 <div class="actions"><button class="btn ghost" id="batchTemplate">Download JSON example</button><button class="btn ghost" id="batchExport">Export queue/status</button></div>
-<div class="field"><label for="batchFile">Import video batch (.json)</label><input id="batchFile" type="file" accept=".json,application/json" class="input"><small>Format: an array of objects with title, script, prompt, stylePrompt and referenceUrl. Importing replaces the visible queue; it does not start rendering.</small></div>
+<div class="field"><label for="batchFile">Import video batch (.json)</label><input id="batchFile" type="file" accept=".json,application/json" class="input"><small>Format: title, script, prompt, stylePrompt, referenceUrl, and optional seo: {title, description, primaryKeyword, tags}. Importing replaces the visible queue; it does not start rendering.</small></div>
 <div class="field"><label for="batchJson">Or paste a JSON array</label><textarea id="batchJson" style="min-height:110px" placeholder='[{"title":"Why Elevators Are Safe","script":"...","prompt":"3D elevator cutaway...","referenceUrl":"https://www.youtube.com/watch?v=..."}]'></textarea></div>
 <div class="field"><label for="batchMode">Production mode</label><select id="batchMode"><option value="script-to-video">Exact narration · Revid chooses visuals</option><option value="prompt-to-video">Detailed visuals · Revid may rewrite narration</option></select><small>Revid script-to-video accepts the exact spoken script, but not a separate scene prompt. Choose visual-direction mode to send your detailed visual prompt; Revid may rewrite the narration.</small></div><div class="row"><div class="field"><label for="batchStyle">Video style</label><select id="batchStyle"><option value="ai-video">AI visuals · Pro</option><option value="motion-graphics">Motion graphics</option><option value="stock-video">Stock footage</option><option value="anime">Anime</option></select></div><div class="field"><label for="batchResolution">Render resolution</label><select id="batchResolution"><option value="720p">720p</option><option value="1080p">1080p</option></select></div></div>
 <div class="field"><label for="batchConcurrency">Simultaneous Revid jobs</label><select id="batchConcurrency"><option value="1">1 at a time · safest</option><option value="2" selected>2 at once · recommended</option><option value="3">3 at once</option><option value="5">5 at once · depends on Revid account limits</option></select><small>Separate videos are submitted as separate Revid jobs. Parallel rendering may be rate-limited by Revid. Your credits are estimated for all selected jobs.</small></div><div class="actions"><button class="btn" id="batchImport">Import / replace queue</button><button class="btn" id="batchEstimate">Estimate selected credits</button><button class="btn primary" id="batchStart" disabled>Start selected renders</button><button class="btn ghost" id="batchStop" disabled>Stop submitting new jobs</button></div>
 <div class="tiny" id="batchSummary" style="margin:12px 0">No videos imported. Revid credits are charged only when a render is submitted.</div>
-<div class="videolist" id="batchList"></div>
+<div class="field"><label>Revid-connected YouTube account</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Connect YouTube first in Revid Settings → Integrations. Publishing requires per-video approval.</small></div><div class="videolist" id="batchList"></div>
 </section><section class="card tab-panel" id="keywordPanel"><div class="cardhead"><div><h2>Google keyword metrics</h2><p>Enter a keyword to see estimated monthly searches, historical volume, competition, bids, and related keyword ideas.</p></div><div class="number">K</div></div><div class="row"><div class="field"><label for="keyword">Keyword or topic</label><input class="input" id="keyword" placeholder="e.g. perfume layering"></div><div class="field"><label for="location">Search location</label><select id="location"><option value="United States">United States</option><option value="Worldwide">Worldwide</option><option value="United Kingdom">United Kingdom</option><option value="Canada">Canada</option><option value="Australia">Australia</option><option value="India">India</option></select></div></div><div class="actions"><button class="btn primary" id="trendBtn">Get keyword metrics</button></div><div class="result" id="trendResult" style="margin-top:14px"><div class="analysis-grid"><div class="analysis-part"><b>AVG. MONTHLY SEARCHES</b><p id="searchVolume">Not available</p></div><div class="analysis-part"><b>ADS COMPETITION</b><p id="adsCompetition">Not available</p></div><div class="analysis-part"><b>COMPETITION INDEX</b><p id="competitionIndex">Not available</p></div><div class="analysis-part"><b>TOP-OF-PAGE BID RANGE</b><p id="bidRange">Not available</p></div></div><div id="trendChart" style="display:flex;align-items:end;height:130px;gap:3px;margin-top:14px"></div><div id="trendDates" class="tiny"></div><div class="field"><label>Related keyword ideas</label><div id="relatedList"></div></div><div class="tiny" id="trendNote"></div></div><div class="notice good" style="margin-top:13px">Google Ads API keyword research is free to call. This feature only reads estimates; it never creates ads or spends campaign budget. Add Google OAuth credentials and a Google Ads customer ID in API connections. Metrics are Google Search estimates; the competition score describes ad placement competition, not organic ranking difficulty.</div></section>
 </main><aside class="rail">
 <section class="card"><h3>API connections</h3><p>Keys are saved only in this browser or app profile. The app sends each key to its provider when you use that feature. Clear saved keys any time.</p><div class="field"><label for="geminiKey">Gemini API key</label><input class="input" id="geminiKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="revidKey">Revid API key</label><input class="input" id="revidKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="apifyKey">Apify API token · social link extraction</label><input class="input" id="apifyKey" type="password" autocomplete="off" placeholder="Paste token"></div><details class="field"><summary style="cursor:pointer;font-size:12px;font-weight:700">Google Ads keyword API connection</summary><p class="tiny" style="margin:7px 0">Enable the Google Ads API in your Cloud project and request Explorer access for live account data. Generate OAuth credentials and a refresh token with the <code>https://www.googleapis.com/auth/adwords</code> scope, then enter them below. Test-only access cannot query live accounts. These credentials are saved only in this browser or app profile.</p><div class="field"><label for="adsClientId">OAuth client ID</label><input class="input" id="adsClientId" autocomplete="off" placeholder="Google Cloud OAuth client ID"></div><div class="field"><label for="adsClientSecret">OAuth client secret</label><input class="input" id="adsClientSecret" type="password" autocomplete="off" placeholder="Google Cloud OAuth client secret"></div><div class="field"><label for="adsRefreshToken">OAuth refresh token</label><input class="input" id="adsRefreshToken" type="password" autocomplete="off" placeholder="Refresh token with adwords scope"></div><div class="field"><label for="adsCustomerId">Google Ads customer ID</label><input class="input" id="adsCustomerId" inputmode="numeric" autocomplete="off" placeholder="10 digits, no hyphens"></div><div class="field"><label for="adsLoginCustomerId">Manager customer ID · optional</label><input class="input" id="adsLoginCustomerId" inputmode="numeric" autocomplete="off" placeholder="Only if accessing through a manager"></div><div class="tiny"><a href="https://console.cloud.google.com/apis/library/googleads.googleapis.com" target="_blank" rel="noreferrer">Enable Google Ads API</a> · <a href="https://developers.google.com/google-ads/api/docs/productionize/access-levels" target="_blank" rel="noreferrer">Request Explorer access</a> · <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noreferrer">OAuth Playground</a>. Use your own OAuth client in the Playground and the <code>adwords</code> scope. Cloud project access replaces the old developer-token setup.</div></details><div class="actions"><button class="btn small primary" id="saveKeysBtn">Save keys</button><button class="btn small ghost" id="forgetBtn">Clear saved keys</button><span class="tiny" id="keysStatus" role="status" aria-live="polite"></span></div><div class="tiny" style="margin-top:8px">Gemini analyzes and writes prompts. Revid searches videos and renders drafts. Apify extracts public social videos and Instagram/TikTok metrics. Google Ads supplies keyword metrics.</div></section>
@@ -154,27 +154,101 @@ $("refreshBtn").onclick=poll;
 /* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;
-const batchDefaults={title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:""};
+const batchDefaults={title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishResult:null};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
-function batchRead(input){const a=Array.isArray(input)?input:input&&Array.isArray(input.videos)?input.videos:null;if(!a||!a.length||a.length>100)throw Error("Provide an array of 1–100 videos (or an object with videos array).");return a.map((v,i)=>{if(!v||typeof v!=="object"||!String(v.script||"").trim())throw Error("Video "+(i+1)+" needs a narration script.");return {...batchDefaults,title:String(v.title||"Video "+(i+1)).slice(0,180),script:String(v.script),prompt:String(v.prompt||v.visualPrompt||""),stylePrompt:String(v.stylePrompt||batchDefaults.stylePrompt),referenceUrl:batchSafeUrl(v.referenceUrl||v.reference||"")}})}
+function batchRead(input){
+ const a=Array.isArray(input)?input:input&&Array.isArray(input.videos)?input.videos:null;
+ if(!a||!a.length||a.length>100)throw Error("Provide an array of 1–100 videos (or an object with videos array).");
+ return a.map((v,i)=>{
+  if(!v||typeof v!=="object"||!String(v.script||"").trim())throw Error("Video "+(i+1)+" needs a narration script.");
+  const seo=v.seo&&typeof v.seo==="object"?v.seo:{},raw=seo.tags??v.tags??[];
+  const tags=Array.isArray(raw)?raw.map(String):String(raw||"").split(",");
+  return {...batchDefaults,title:String(v.title||seo.title||"Video "+(i+1)).slice(0,180),script:String(v.script),
+    prompt:String(v.prompt||v.visualPrompt||""),stylePrompt:String(v.stylePrompt||batchDefaults.stylePrompt),
+    referenceUrl:batchSafeUrl(v.referenceUrl||v.reference||""),
+    seoTitle:String(seo.title||v.seoTitle||v.youtubeTitle||v.title||"").slice(0,100),
+    seoDescription:String(seo.description||v.seoDescription||v.description||"").slice(0,5000),
+    primaryKeyword:String(seo.primaryKeyword||v.primaryKeyword||"").slice(0,200),
+    tags:tags.map(x=>x.trim()).filter(Boolean).slice(0,50)};
+ });
+}
 function batchMedia(){let t=$("batchStyle").value;return t==="anime"?{type:"ai-video",videoModel:"pro",mediaPreset:"ANIME"}:t==="motion-graphics"?{type:"motion-graphics",videoModel:"pro",mediaPreset:"MOTION_INSPIRATION_DARK_SAAS"}:t==="stock-video"?{type:"stock-video"}:{type:"ai-video",videoModel:"pro"}}
 function batchPayload(v){const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40};return {workflow:mode,source,aspectRatio:"9:16",media:batchMedia(),voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
 function batchDraw(){
  const active=batchJobs.filter(j=>j.selected),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
  $("batchStart").disabled=batchRunning||!active.length||!batchEstimated||active.some(j=>j.credits===null||j.status!=="Ready");
  $("batchStop").disabled=!batchRunning;
- $("batchSummary").textContent=batchJobs.length+" videos imported · "+active.length+" selected · "+batchJobs.filter(j=>j.status==="Complete").length+" complete · "+batchJobs.filter(j=>j.approved).length+" approved · "+(batchEstimated?"Selected estimated total (includes 10 render credits per video): "+total+" credits":"Estimate credits before rendering")+(batchRunning?" · Parallel processing (keep app open) · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
- $("batchList").innerHTML=batchJobs.map((v,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div><p>Video '+(i+1)+' · Estimated credits: '+(v.credits===null?"not estimated":v.credits)+' · '+esc(v.error||"")+'</p>'+(v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference video</a> · ':'')+'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> '+(v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label>':'')+'</div>').join("");
+ $("batchSummary").textContent=batchJobs.length+" videos imported · "+active.length+" selected · "+batchJobs.filter(j=>j.status==="Complete").length+" complete · "+batchJobs.filter(j=>j.approved).length+" approved · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
+ $("batchList").innerHTML=batchJobs.map((v,i)=>{
+  const tags=Array.isArray(v.tags)?v.tags:[],published=v.publishStatus==="Submitted";
+  return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div>'+
+  '<p>Video '+(i+1)+' · Estimated credits: '+(v.credits===null?"not estimated":v.credits)+' · '+esc(v.error||"")+'</p>'+
+  '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · Publish: '+esc(v.publishStatus||"Not submitted")+'</p>'+
+  (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
+  '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> '+
+  (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
+  (v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
+  (v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
+  '</div>';
+ }).join("");
 }
 function batchInvalidate(){batchEstimated=false;for(const j of batchJobs)if(!["Complete","Rendering"].includes(j.status))j.credits=null;batchPersist();batchDraw()}
 $("batchFile").onchange=async e=>{try{$("batchJson").value=await e.target.files[0].text()}catch(err){alert(err.message)}};
 $("batchImport").onclick=()=>{if(batchRunning)return;try{batchJobs=batchRead(JSON.parse($("batchJson").value));batchInvalidate();say("Batch imported — estimate credits before rendering")}catch(e){alert("Import error: "+e.message)}};
-$("batchTemplate").onclick=()=>{const x=[{title:"How Elevators Stay Safe",script:"What happens if an elevator cable breaks? Modern elevators have several safety systems...",prompt:"Show realistic 3D elevator cutaway with safety ropes and brakes.",stylePrompt:"9:16 realistic 3D animation, fifth-grade explanation, large captions.",referenceUrl:"https://www.youtube.com/watch?v=kv3dBfNYe84"}];batchDownload("clipfarm-batch-example.json",x)};
+$("batchTemplate").onclick=()=>{const x=[{title:"How Elevators Stay Safe",script:"What happens if an elevator cable breaks? Modern elevators have several safety systems...",prompt:"Show realistic 3D elevator cutaway with safety ropes and brakes.",stylePrompt:"9:16 realistic 3D animation, fifth-grade explanation, large captions.",referenceUrl:"",seo:{title:"How Elevators Keep You Safe",description:"Learn how elevator safety systems work.",primaryKeyword:"elevator safety systems",tags:["elevator safety","engineering","how elevators work"]}}];batchDownload("clipfarm-batch-example.json",x)};
 function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
-$("batchList").onclick=e=>{const i=e.target.dataset.bedit;if(i===undefined)return;const j=batchJobs[+i];if(batchRunning)return alert("Stop the batch before editing.");const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");j.script=next;j.status="Ready";j.pid="";j.videoUrl="";j.approved=false;batchInvalidate()};
+$("batchList").onclick=async e=>{
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit;
+ if(p!==undefined){await publishBatchVideo(+p);return}
+ if(x!==undefined){
+  if(batchRunning)return alert("Stop the batch before editing.");
+  const j=batchJobs[+x],title=prompt("YouTube title (max 100 characters)",j.seoTitle||j.title);if(title===null)return;
+  const description=prompt("YouTube description",j.seoDescription);if(description===null)return;
+  const keyword=prompt("Primary researched keyword",j.primaryKeyword);if(keyword===null)return;
+  const tags=prompt("Tags (comma-separated)",(j.tags||[]).join(", "));if(tags===null)return;
+  j.seoTitle=title.trim().slice(0,100);j.seoDescription=description.slice(0,5000);j.primaryKeyword=keyword.trim();
+  j.tags=tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,50);batchPersist();batchDraw();return;
+ }
+ if(i===undefined)return;const j=batchJobs[+i];if(batchRunning)return alert("Stop the batch before editing.");
+ const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");
+ j.script=next;j.status="Ready";j.pid="";j.videoUrl="";j.approved=false;j.publishStatus="";j.youtubeUrl="";batchInvalidate();
+};
+$("batchLoadAccounts").onclick=async()=>{
+ const key=keys().revid;if(!key)return alert("Enter your Revid API key first.");
+ try{
+  const x=await api("/api/revid/social-accounts",{key}),raw=x.accounts||x.socialAccounts||x.data?.accounts||x.data?.socialAccounts||x.data||[];
+  const sel=$("batchYoutubeAccount");sel.innerHTML='<option value="">Choose YouTube account</option>';
+  for(const a of (Array.isArray(raw)?raw:[])){
+   if(!String(a.platform||a.type||a.network||a.provider||"").toLowerCase().includes("youtube"))continue;
+   const id=String(a.id||a.accountId||a.socialAccountId||"");if(!id)continue;
+   const name=String(a.name||a.channelName||a.username||a.handle||id),opt=document.createElement("option");
+   opt.value=id;opt.textContent=name;opt.dataset.channelName=name;sel.appendChild(opt);
+  }
+  if(sel.options.length===1)alert("No connected YouTube accounts found. Connect your channel in Revid Settings → Integrations.");
+ }catch(err){alert("Could not load YouTube accounts: "+err.message)}
+};
+async function publishBatchVideo(index){
+ const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
+ if(!j||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Video must finish rendering first.");
+ if(!j.approved)return alert("Review and approve the video first.");
+ if(!sel.value)return alert("Choose a connected YouTube account.");
+ if(j.publishStatus==="Submitted"||j.publishStatus==="Submitting")return alert("Already submitted. Check Revid for status.");
+ const title=(j.seoTitle||j.title).trim(),description=j.seoDescription.trim();
+ if(!title||!description)return alert("Enter a YouTube title and description in Edit SEO.");
+ if(!confirm('Publish "'+title+'" to YouTube channel "'+account.textContent+'"?'))return;
+ j.publishStatus="Submitting";batchPersist();batchDraw();
+ try{
+  const result=await api("/api/revid/publish-now",{key:keys().revid,videoUrl:j.videoUrl,pid:j.pid,
+   channelName:account.dataset.channelName||account.textContent,accountId:sel.value,title,description,tags:j.tags});
+  j.publishResult=result;j.publishStatus="Submitted";
+  j.youtubeUrl=String(result.youtubeUrl||result.url||result.postUrl||result.data?.youtubeUrl||"");
+  alert("Publishing request submitted to Revid. Verify its final status in Revid or YouTube Studio.");
+ }catch(err){j.publishStatus="Needs review";j.error="Publishing: "+err.message;alert(j.error)}
+ batchPersist();batchDraw();
+}
 $("batchMode").onchange=batchInvalidate;$("batchStyle").onchange=batchInvalidate;$("batchResolution").onchange=batchInvalidate;
 $("batchEstimate").onclick=async()=>{if(batchRunning)return;if(!batchJobs.some(j=>j.selected))return alert("Select at least one video.");const b=$("batchEstimate");b.disabled=true;try{for(let i=0;i<batchJobs.length;i++){const j=batchJobs[i];if(!j.selected||["Complete","Rendering"].includes(j.status))continue;$("batchSummary").textContent="Estimating "+(i+1)+"/"+batchJobs.length+": "+j.title;const x=await api("/api/revid/estimate",{payload:batchPayload(j)});let n=Number(x.creditsToConsume??x.credits??x.estimatedCredits??x.cost);if(!Number.isFinite(n))throw Error("Revid returned no usable credit estimate for "+j.title);j.credits=n+10}batchEstimated=true;batchPersist();batchDraw()}catch(e){batchEstimated=false;batchDraw();alert("Estimation stopped: "+e.message)}finally{b.disabled=false}};
 $("batchStop").onclick=()=>{batchStop=true;say("No new renders will start; active Revid jobs continue and Clip Farm will keep checking them")};
@@ -362,7 +436,17 @@ export default {async fetch(request){
   if(request.method==="POST"&&url.pathname==="/api/revid/render"){
    const {key,payload}=await request.json();return json(await revidRest("render",key,payload));
   }
-  if(request.method==="POST"&&url.pathname==="/api/revid/status"){
+  if(request.method==="POST"&&url.pathname==="/api/revid/social-accounts"){
+    const {key}=await request.json();if(!key)throw new Error("Revid key required.");return json(await revidRest("social-accounts",key));
+   }
+   if(request.method==="POST"&&url.pathname==="/api/revid/publish-now"){
+    const {key,videoUrl,pid,channelName,accountId,title,description,tags}=await request.json();
+    if(!key||!pid||!videoUrl||!accountId||!title||!description)throw new Error("Rendered video, YouTube account, title and description required.");
+    if(!/^https:\/\//.test(videoUrl))throw new Error("Secure video URL required.");
+    const payload={videoUrl,channelName,youtube:{title:String(title).slice(0,100),description:String(description).slice(0,5000),tags:Array.isArray(tags)?tags.slice(0,50):[]}};
+    return json(await revidRest("publish-now",key,payload));
+   }
+   if(request.method==="POST"&&url.pathname==="/api/revid/status"){
    const {key,pid}=await request.json();return json(await revidRest("status?pid="+encodeURIComponent(pid),key));
   }
   return json({error:"Route not found"},404);
