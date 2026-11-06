@@ -24,10 +24,21 @@ The desktop app reuses `../worker/index.js` through a small local HTTP adapter. 
 
 Use `npm run pack:mac:arm64` to package for Apple Silicon. Builds are unsigned in this starter version. On first launch, macOS may require Control-clicking the app and choosing **Open**.
 
-## Download a Mac build from GitHub Actions
+## Download the Intel Mac installer
 
-The `Build Clip Farm for Mac` workflow can package the Intel `.dmg` on a macOS runner. Run it from the repository's **Actions** tab with **Run workflow**, then download the `clip-farm-mac-intel` artifact from the completed run.
+**Direct-download releases:** https://github.com/camuelbaldwin/clipfarm/releases
 
-## Technical note
+The installer is a macOS `.dmg` file, not a JSON file or a GitHub source-code ZIP. A download only appears after a successful build.
 
-The desktop app uses Electron to provide a native Mac window and package the existing Clip Farm workflow. The HTML interface and provider routes remain in the existing Clip Farm Worker source. `npm run sync:worker` copies that source into a temporary `.mjs` file for the app package; the generated file is ignored by Git.
+To make a new installer:
+1. Sign in to GitHub and open https://github.com/camuelbaldwin/clipfarm/actions/workflows/build-clip-farm-mac.yml
+2. Click **Run workflow**, select `main`, and click the green **Run workflow** button.
+3. Open the new run and confirm the **Package Intel Mac app** and **Publish direct-download release** steps are green.
+4. Open https://github.com/camuelbaldwin/clipfarm/releases and download the latest `.dmg` under **Assets**.
+
+Automatic builds on source changes also provide the `clip-farm-mac-intel` ZIP under **Artifacts** on the successful workflow run page. Extract that ZIP to get the `.dmg`.
+
+To install: open the DMG, drag the application to Applications, then Control-click the app → **Open** if macOS warns that it isn't from an identified developer. Builds are unsigned. Your Mac must have an Intel processor and macOS 10.15 or newer.
+
+**If there is no DMG in Releases or Artifacts:** the workflow has not finished successfully. Open the latest Actions run and inspect the first red step. Do not download the GitHub `Source code.zip` archive: that is source code, not the installer.
+
