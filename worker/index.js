@@ -321,7 +321,7 @@ $("pipelineDrafts").onclick=e=>{const i=e.target.dataset.pedit;if(i===undefined)
  const description=prompt("YouTube description",v.seo.description);if(description===null)return;
  const tags=prompt("Tags, separated by commas",v.seo.tags.join(", "));if(tags===null)return;
  if(!title.trim()||!script.trim())return alert("Title and script are required.");
- v.title=title.trim();v.script=script.trim();v.prompt=visual.trim();v.seo={...v.seo,title:title.trim(),description:description.trim(),tags:tags.split(",").map(x=>x.trim()).filter(Boolean)};pipelineSave();pipelineDraw();
+ v.title=title.trim();v.script=script.trim();v.prompt=visual.trim();v.seo={...v.seo,title:title.trim(),description:description.trim(),tags:tags.split(",").map(x=>x.trim()).filter(Boolean)};v.seoTitle=v.seo.title;v.seoDescription=v.seo.description;v.primaryKeyword=v.seo.primaryKeyword;v.tags=v.seo.tags;pipelineSave();pipelineDraw();
 };
 $("pipelineResearch").onclick=async()=>{
  const k=keys(),topic=$("pipelineTopic").value.trim();if(!topic)return alert("Enter a research topic.");if(!k.revid)return alert("Add your Revid API key in API connections.");
@@ -342,7 +342,7 @@ $("pipelineGenerate").onclick=async()=>{
  try{
   const refs=selected.slice(0,15).map(v=>({url:pipelineRefUrl(v),title:String(v.summary||v.description||v.hook||"").slice(0,350),views:v.engagement?.views??v.views??null,likes:v.engagement?.likes??v.likes??null,platform:v.platform||"youtube"}));
   const d=await api("/api/gemini/research-batch",{key:k.gemini,topic:$("pipelineTopic").value.trim(),direction:$("pipelineDirection").value.trim(),count,references:refs});
-  pipelineDrafts=batchRead(d.videos).map(v=>({...v,referenceUrl:batchSafeUrl(v.referenceUrl),selected:true}));
+  pipelineDrafts=batchRead(d.videos).map(v=>({...v,seo:{title:v.seoTitle,description:v.seoDescription,primaryKeyword:v.primaryKeyword,tags:v.tags},referenceUrl:batchSafeUrl(v.referenceUrl),selected:true}));
   $("pipelineStatus").textContent=pipelineDrafts.length+" drafts generated. Inspect scripts and claims, edit metadata, then send to the rendering queue.";
   pipelineSave();pipelineDraw();
  }catch(e){$("pipelineStatus").textContent=e.message;err(e)}finally{b.disabled=false;pipelineDraw()}
