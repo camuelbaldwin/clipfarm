@@ -8,25 +8,49 @@ on:
       - "mac/**"
       - ".github/workflows/build-clip-farm-mac.yml"
 
+permissions:
+  contents: write
+
 jobs:
   package-intel-mac:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Check out Clip Farm
         uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
       - name: Install desktop dependencies
         working-directory: mac
-        run: npm install
+        run: npm install --no-audit --no-fund
+      - name: Validate the bundled app
+        working-directory: mac
+        run: |
+          npm run sync:worker
+          node --check worker.mjs
+          node --check main.mjs
       - name: Package Intel Mac app
         working-directory: mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run pack:mac:x64
-      - name: Upload Mac disk image
+      - name: Verify Intel installer exists
+        run: |
+          ls -lh mac/release
+          test -n "$(find mac/release -maxdepth 1 -name '*.dmg' -print -quit)"
+      - name: Upload Intel Mac installer ZIP
         uses: actions/upload-artifact@v4
         with:
           name: clip-farm-mac-intel
           path: mac/release/*.dmg
           if-no-files-found: error
+          retention-days: 90
+      - name: Publish direct-download release (manual builds only)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: mac-build-${{ github.run_number }}
+        run: |
+          gh release create "$TAG" mac/release/*.dmg --repo "$REPO" --title "Clip Farm Studio — Intel Mac build ${{ github.run_number }}" --notes "Unsigned Intel Mac installer for macOS 10.15 or newer. Open the DMG, drag Clip Farm Studio to Applications, then Control-click Open if macOS blocks the first launch. Preview build."
