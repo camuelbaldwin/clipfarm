@@ -282,12 +282,12 @@ function seoAttach(records){
  const statuses=new Map(batchJobs.filter(j=>j.pid).map(j=>[j.pid,j]));const target=new Map(statuses);
  for(const r of records){
   const p=projectById.get(r.pid),prior=statuses.get(r.pid);
-  if(prior?.publishStatus==="Published")throw Error("Project "+r.pid+" is already marked Published. No changes imported.");
+  if(prior?.publishContentId||["Published","Submitted","Processing","Submitting"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a submitted YouTube publishing request. Verify it before changing metadata.");
   const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
    pid:p.pid,videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
   target.set(r.pid,item);
  }
- batchJobs=[...target.values()];batchPersist();batchDraw();return records.length;
+ batchJobs=[...batchJobs.filter(j=>!j.pid),...target.values()];batchPersist();batchDraw();return records.length;
 }
 $("existingSeoImport").onchange=async e=>{
  try{
@@ -330,7 +330,7 @@ $("existingGenerateSeo").onclick=async()=>{
 $("existingLoadProjects").onclick=async()=>{
  const key=keys().revid;if(!key)return alert("Save a Revid API key first.");
  const b=$("existingLoadProjects");b.disabled=true;$("existingStatus").textContent="Loading existing projects from your Revid account…";
- try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects found. Match each to the correct SEO package. Nothing will be published until you approve."}
+ try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects loaded. Select the 21 you want, then Create SEO. Nothing will be published until you approve."}
  catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
  finally{b.disabled=false}
 };
@@ -744,7 +744,7 @@ export default {async fetch(request){
   }
   if(request.method==="POST"&&url.pathname==="/api/revid/projects"){
     const {key}=await request.json();if(!key)throw new Error("Revid API key required.");
-    return json(await revidRest("projects",key));
+    return json(await revidRest("projects?limit=100",key));
    }
    if(request.method==="POST"&&url.pathname==="/api/revid/social-accounts"){
     const {key}=await request.json();if(!key)throw new Error("Revid key required.");return json(await revidRest("social-accounts",key));
