@@ -69,8 +69,9 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="tiny" id="batchSummary" style="margin:12px 0">No videos imported. Revid credits are charged only when a render is submitted.</div>
 <section class="card" style="margin:16px 0;background:#16121e">
 <h3 style="margin:0 0 4px">Use videos already made in Revid</h3>
-<p class="tiny">Connect an existing Revid project to one of our five researched SEO packages. It does not render a new video or spend generation credits.</p>
-<div class="actions"><button class="btn ghost" id="existingLoadProjects">Load my Revid videos</button><button class="btn ghost" id="existingLoadSeo">Load our 5 SEO packages</button></div>
+<p class="tiny">Load your existing Revid projects, select the videos to prepare, and generate or import their YouTube SEO. Project IDs keep all metadata with the right video. No new renders.</p>
+<div class="actions"><button class="btn primary" id="existingLoadProjects">1 · Load Revid videos</button><button class="btn ghost" id="existingGenerateSeo">2 · Create SEO for selected videos</button></div>
+<div class="actions"><label class="btn ghost" for="existingSeoImport">Import SEO JSON package</label><input type="file" id="existingSeoImport" accept=".json,application/json" style="position:absolute;left:-9999px" aria-label="Import SEO JSON package"><button class="btn ghost" id="existingSeoExport">Download matched SEO package</button><button class="btn ghost" id="existingLoadSeo">Use our 5 older SEO topics</button></div>
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
@@ -170,7 +171,7 @@ $("refreshBtn").onclick=poll;
 
 /* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
 const BATCH_STORE="clipfarm-batch-v1";
-let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[];
+let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[],existingSeoBusy=false;
 const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
@@ -245,22 +246,86 @@ function existingProjectsNormalize(raw){
   name:String(p.name||p.title||p.projectName||p.project_title||p.metadata?.title||"Untitled Revid project"),
   status:String(p.status||p.state||p.renderStatus||"").toLowerCase(),
   videoUrl:batchSafeUrl(p.videoUrl||p.video_url||p.mp4Url||p.exportUrl||p.url||""),
-  original:p
+  original:p,selected:true,sourceText:String(p.script||p.source?.text||p.source?.prompt||p.prompt||p.description||p.metadata?.description||"").slice(0,3500)
  })).filter(p=>p.pid);
 }
 function existingDrawProjects(){
  const choices=PREPARED_FIVE.map((p,i)=>'<option value="'+i+'">'+esc(p.seo.title)+'</option>').join("");
- $("existingProjects").innerHTML=existingProjects.map((p,i)=>'<div class="variant"><div class="varianttop"><strong>'+esc(p.name)+'</strong><span class="badge">'+esc(p.status||"Status unknown")+'</span></div>'+
- '<p class="tiny">Revid project: '+esc(p.pid)+'</p>'+
- (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview existing video</a>':'')+
- '<div class="field"><label for="existingMatch'+i+'">Match to researched YouTube SEO</label><select id="existingMatch'+i+'" class="input"><option value="">Select matching topic</option>'+choices+'</select></div>'+
- '<div class="actions"><button class="btn small primary" data-existing-match="'+i+'">Attach video + metadata</button></div></div>').join("")||'<span class="tiny">No existing Revid projects found.</span>';
+ $("existingProjects").innerHTML=existingProjects.map((p,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label><span class="badge">'+esc(p.status||"Status unknown")+'</span></div>'+
+ '<p class="tiny">Revid project: '+esc(p.pid)+(p.sourceText?' · Source content available':' · Title-only SEO needs review')+'</p>'+
+ (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
+ '<div class="field"><label for="existingMatch'+i+'">Or match an older researched topic</label><select id="existingMatch'+i+'" class="input"><option value="">Select one of our original five topics</option>'+choices+'</select></div>'+
+ '<div class="actions"><button class="btn small ghost" data-existing-match="'+i+'">Attach older SEO package</button></div></div>').join("")||'<span class="tiny">No existing Revid projects found.</span>';
 }
+$("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;const count=existingProjects.filter(p=>p.selected).length;$("existingStatus").textContent=count+" projects selected for SEO preparation."};
+function seoBundle(){
+ return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
+}
+$("existingSeoExport").onclick=()=>{const bundle=seoBundle();if(!bundle.videos.length)return alert("No matched Revid SEO records to export.");batchDownload("clipfarm-youtube-seo-package.json",bundle)};
+function seoVerify(input){
+ if(!input||input.format!=="clipfarm-seo-v1"||!Array.isArray(input.videos))throw Error("Not a Clip Farm SEO v1 package.");
+ if(input.videos.length>100||!input.videos.length)throw Error("SEO package must include 1–100 video records.");
+ const used=new Set();
+ return input.videos.map((v,i)=>{
+  const pid=String(v.projectId||"").trim(),seo=v.seo||{};
+  if(!pid||used.has(pid))throw Error("Missing or duplicate Revid project ID at record "+(i+1));used.add(pid);
+  const title=String(seo.title||"").trim(),description=String(seo.description||"").trim(),tags=seo.tags;
+  if(!title||title.length>100||!description||description.length>5000||!Array.isArray(tags))throw Error("Invalid SEO fields for "+pid+" (title, description and tags are required).");
+  return {pid,title,description,primaryKeyword:String(seo.primaryKeyword||"").slice(0,200),tags:tags.map(x=>String(x).trim()).filter(Boolean).slice(0,50),research:v.research||null,revidTitle:String(v.revidTitle||"")};
+ });
+}
+function seoAttach(records){
+ if(batchRunning||batchJobs.some(j=>["Rendering","Submitting"].includes(j.status)))throw Error("Active rendering or publishing in progress. Finish it before importing.");
+ if(!existingProjects.length)throw Error("Load your existing Revid videos before importing metadata. This prevents mismatched project IDs.");
+ const projectById=new Map(existingProjects.map(p=>[p.pid,p])),unknown=records.filter(r=>!projectById.has(r.pid));
+ if(unknown.length)throw Error(unknown.length+" project IDs do not exist in the loaded Revid account: "+unknown.slice(0,3).map(x=>x.pid).join(", ")+". Nothing imported.");
+ const statuses=new Map(batchJobs.filter(j=>j.pid).map(j=>[j.pid,j]));const target=new Map(statuses);
+ for(const r of records){
+  const p=projectById.get(r.pid),prior=statuses.get(r.pid);
+  if(prior?.publishStatus==="Published")throw Error("Project "+r.pid+" is already marked Published. No changes imported.");
+  const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
+   pid:p.pid,videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
+  target.set(r.pid,item);
+ }
+ batchJobs=[...target.values()];batchPersist();batchDraw();return records.length;
+}
+$("existingSeoImport").onchange=async e=>{
+ try{
+  const file=e.target.files?.[0];if(!file)return;
+  const records=seoVerify(JSON.parse(await file.text()));
+  if(!confirm("Import "+records.length+" SEO packages and attach them to matching Revid project IDs? Existing publishing status will be preserved, and approvals reset."))return;
+  const count=seoAttach(records);$("existingStatus").textContent=count+" SEO records attached by exact Revid project ID. Review before publishing.";say("SEO package imported successfully");
+ }catch(err){alert("SEO package import failed: "+err.message)}finally{e.target.value=""}
+};
+
 $("existingLoadSeo").onclick=()=>{
  if(batchJobs.length&&!confirm("Replace the current queue with our five researched SEO packages? This discards existing video matches and publication status saved in Clip Farm."))return;
  if(batchJobs.some(j=>j.status==="Rendering"||j.status==="Submitting"))return alert("Existing renders are active. Finish them before changing this queue.");
  batchJobs=batchRead(PREPARED_FIVE).map((v,i)=>({...v,research:PREPARED_FIVE[i].research,selected:false}));
  batchInvalidate();$("existingStatus").textContent="Five original SEO packages loaded. No Revid rendering started. Choose an existing Revid video and match it.";
+};
+$("existingGenerateSeo").onclick=async()=>{
+ if(existingSeoBusy)return;
+ const k=keys(),projects=existingProjects.filter(p=>p.selected);
+ if(!projects.length)return alert("Load your Revid projects and select at least one video.");
+ if(!k.gemini||!k.vidiq)return alert("Save both Gemini and vidIQ keys. vidIQ performs keyword research; Gemini writes final metadata.");
+ if(projects.some(p=>!p.name||p.name==="Untitled Revid project"))return alert("Some selected projects have no useful title. Rename them in Revid, reload, then generate SEO.");
+ if(!confirm("Research SEO for "+projects.length+" Revid videos? This uses vidIQ research calls and Gemini API credits. No videos will render or publish. Continue?"))return;
+ existingSeoBusy=true;const btn=$("existingGenerateSeo");btn.disabled=true;
+ let completed=0,errors=[];const records=[];
+ try{
+  for(const p of projects){
+   $("existingStatus").textContent="SEO "+(completed+errors.length+1)+"/"+projects.length+": "+p.name+"…";
+   try{
+    const d=await api("/api/seo/project",{geminiKey:k.gemini,vidiqKey:k.vidiq,projectId:p.pid,projectTitle:p.name,projectText:p.sourceText});
+    const r=seoVerify({format:"clipfarm-seo-v1",videos:[d]})[0];records.push(r);completed++;
+    seoAttach([r]); // Preserve each successful project if a later API call fails
+   }catch(e){errors.push(p.name+": "+e.message)}
+  }
+  $("existingStatus").textContent=completed+" of "+projects.length+" videos have researched SEO and are linked by project ID."+ (errors.length?" "+errors.length+" need attention.":"")+" No renders or publishing started.";
+  if(errors.length)alert("SEO failed for "+errors.length+" videos:\n"+errors.slice(0,8).join("\n")+"\nYou can retry selected projects or import an SEO JSON package.");
+  if(completed)batchDownload("clipfarm-revid-seo-"+completed+"-videos.json",{format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:records.map(r=>({projectId:r.pid,revidTitle:r.revidTitle,seo:{title:r.title,description:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags},research:r.research}))});
+ }finally{existingSeoBusy=false;btn.disabled=false}
 };
 $("existingLoadProjects").onclick=async()=>{
  const key=keys().revid;if(!key)return alert("Save a Revid API key first.");
