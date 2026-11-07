@@ -17,7 +17,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 .input,select,textarea{width:100%;background:#11120f;color:var(--text);border:1px solid #3a3b34;border-radius:10px;padding:11px 12px;outline:none}.input:focus,select:focus,textarea:focus{border-color:#92b751;box-shadow:0 0 0 3px #c3f06b1a}textarea{min-height:82px;resize:vertical}
 .upload{border:1px dashed #5a5c51;border-radius:12px;background:#131410;padding:16px;position:relative;transition:.15s}.upload:hover,.upload.drag{border-color:var(--lime);background:#1b2014}.upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}.uploadrow{display:flex;align-items:center;gap:12px}.uploadicon{width:36px;height:36px;border-radius:10px;background:#2a3020;color:var(--lime);display:grid;place-items:center;font-size:19px}.upload strong{display:block;font-size:13px}.upload span{color:var(--muted);font-size:11px}.filelist{display:grid;gap:7px;margin-top:10px}.fileitem{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#22231f;border-radius:9px;padding:8px 10px;font-size:12px}.fileitem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fileitem button{border:0;background:transparent;color:var(--muted);font-size:17px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.btn{border:1px solid var(--line);border-radius:10px;padding:10px 15px;color:var(--text);background:#282923;font-weight:750;font-size:13px;transition:.15s}.btn:hover{transform:translateY(-1px);border-color:#6b6e60}.btn.primary{background:var(--lime);color:#15101f;border-color:var(--lime)}.btn.primary:hover{background:#d2ff79}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.btn.ghost{background:transparent}.btn.small{padding:7px 10px;font-size:11px}
-#discoverPanel,#analysisPanel,#keywordPanel{display:none!important} #batchPanel .actions:has(#batchTemplate),#batchPanel .field:has(#batchFile),#batchPanel .field:has(#batchJson),#batchImport{display:none!important}.rail>section:nth-child(n+2){display:none!important}.legacy-setup{display:none!important}.rail{position:sticky;top:18px;display:grid;gap:14px}.rail .card{padding:17px}.rail h3{margin:0 0 10px;font-size:13px}.rail p{margin:0;color:var(--muted);font-size:12px}.connect{display:grid;gap:10px}.connrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}.connrow .state{color:var(--muted)}.tiny{color:var(--muted);font-size:10px;line-height:1.5}.notice{border-left:3px solid var(--orange);padding:9px 11px;background:#2a201a;color:#e9c8b5;border-radius:0 8px 8px 0;font-size:11px;line-height:1.45}.notice.good{border-color:var(--lime);background:#202619;color:#d9edb7}.divider{height:1px;background:var(--line);margin:13px 0}
+#discoverPanel,#analysisPanel,#keywordPanel{display:none!important} #batchPanel .actions:has(#batchTemplate){display:none!important}.rail>section:nth-child(n+2){display:none!important}.legacy-setup{display:none!important}.rail{position:sticky;top:18px;display:grid;gap:14px}.rail .card{padding:17px}.rail h3{margin:0 0 10px;font-size:13px}.rail p{margin:0;color:var(--muted);font-size:12px}.connect{display:grid;gap:10px}.connrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}.connrow .state{color:var(--muted)}.tiny{color:var(--muted);font-size:10px;line-height:1.5}.notice{border-left:3px solid var(--orange);padding:9px 11px;background:#2a201a;color:#e9c8b5;border-radius:0 8px 8px 0;font-size:11px;line-height:1.45}.notice.good{border-color:var(--lime);background:#202619;color:#d9edb7}.divider{height:1px;background:var(--line);margin:13px 0}
 .result{display:none}.result.show{display:block}.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.analysis-part{background:#22231f;border:1px solid #31322b;border-radius:11px;padding:12px}.analysis-part b{display:block;font-size:12px;color:var(--lime);margin-bottom:5px}.analysis-part p{margin:0;font-size:12px;color:#d0d1c9;white-space:pre-wrap}
 .variant-list{display:grid;gap:10px}.variant{background:#22231f;border:1px solid #34352e;border-radius:12px;padding:14px}.varianttop{display:flex;justify-content:space-between;align-items:center;gap:10px}.varianttop h3{font-size:14px;margin:0}.badge{border:1px solid #4d6040;color:var(--lime);border-radius:999px;padding:3px 8px;font-size:10px}.variant p{color:#c7c8c0;font-size:12px;white-space:pre-wrap;margin:10px 0 0}.video-card{background:#22231f;border-radius:12px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.video-card strong{font-size:12px}.video-card small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.bar{height:5px;background:#3a3c34;border-radius:99px;margin-top:9px;overflow:hidden}.bar i{display:block;width:8%;height:100%;background:var(--lime);transition:width .4s}.preview{width:100%;max-height:280px;background:#080808;border-radius:11px;margin-top:12px}
 .foot{margin-top:24px;text-align:center;color:#74766d;font-size:10px}.tabs{display:flex;gap:8px;margin:16px 0}.tab{border:1px solid var(--line);background:#171815;color:var(--muted);border-radius:10px;padding:9px 13px;font-weight:700;font-size:12px}.tab.on{border-color:#7d9654;color:var(--lime);background:#22271a}.tab-panel{display:none}.tab-panel.on{display:block}.spin{display:inline-block;width:13px;height:13px;border:2px solid #65675d;border-top-color:var(--lime);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
@@ -26,8 +26,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 </style></head>
 <body><div class="shell">
 <header class="top"><div class="brand"><div class="mark">CF</div><div><strong>CLIP FARM STUDIO</strong><small>One workspace. One production line.</small></div></div><div class="status-pill"><i class="dot" id="topDot"></i><span id="topStatus">Connect your providers to start</span></div></header>
-<section class="hero"><div><div class="eyebrow">Your prompt production workspace</div><h1>Research. Create.<br>Render. Publish.</h1><p>vidIQ research → Gemini scripts and SEO → Revid videos → YouTube approval. One production workflow.</p></div></section>
-<div class="tabs"><button class="tab on" data-tab="pipeline">1 · Research + Create</button><button class="tab" data-tab="batch">2 · Render + Publish</button></div>
+<section class="hero"><div><div class="eyebrow">Your prompt production workspace</div><h1>Two clear ways<br>to work.</h1><p><b>Create New:</b> Add scripts or generate ideas, then send videos to Revid. <b>Publish Existing:</b> Find finished Revid videos, add YouTube SEO and publish after review.</p></div></section>
+<div class="tabs"><button class="tab on" data-tab="pipeline">Create New Videos</button><button class="tab" data-tab="batch">Publish Existing Revid Videos</button></div>
 <div class="grid"><main class="main">
 <section class="card tab-panel" id="discoverPanel"><div class="cardhead"><div><h2>Find videos by topic, niche, or keyword</h2><p>Search short-form videos across YouTube Shorts, Instagram Reels, and TikTok. The index matches the topic to video text; sort by best match, likes, or recency, then inspect the video description and public metrics.</p></div><div class="number">1</div></div>
 <div class="row"><div class="field"><label for="videoSearchQuery">What videos are you looking for?</label><input class="input" id="videoSearchQuery" placeholder="e.g. fire safety myths explained"></div><div class="field"><label for="videoSort">Sort results</label><select id="videoSort"><option value="relevance">Best match</option><option value="popular">Most liked</option><option value="recent">Most recent</option></select></div></div>
@@ -49,18 +49,26 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <section class="card result" id="renderCard"><div class="cardhead"><div><h2>4 · Draft preview</h2><p>Render status and video preview.</p></div><div class="number">4</div></div><div class="tiny" id="renderStatus"></div><video id="draftVideo" class="preview" controls style="display:none"></video><div class="actions"><button class="btn ghost" id="refreshBtn">Refresh status</button><a class="btn ghost" id="openDraft" target="_blank" rel="noreferrer" style="display:none">Open rendered video</a></div></section>
 </div>
 <section class="card tab-panel on" id="pipelinePanel">
-<div class="cardhead"><div><h2>Research → Create → Revid → YouTube</h2><p>Produce an original five-video batch inside Clip Farm. No Make scenario or JSON download.</p></div><div class="number">P</div></div>
-<div class="notice">vidIQ researches real video breakouts and keyword estimates. Gemini drafts original scripts, visuals and SEO. Check claims before rendering; publishing always requires your approval.</div>
+<div class="cardhead"><div><h2>Create New Videos</h2><p>Start from your own scripts and prompts, import a batch, or generate new ideas. Then render in Revid.</p></div><div class="number">P</div></div>
+<div class="notice good">New projects only. This screen sends new videos to Revid for creation. Videos already in Revid belong in <b>Publish Existing Revid Videos</b>.</div>
 <div class="row"><div class="field"><label for="pipelineTopic">Channel niche / research topic</label><input class="input" id="pipelineTopic" value="building engineering explained" placeholder="e.g. expensive building failures"></div><div class="field"><label for="pipelineCount">Draft videos</label><select id="pipelineCount"><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div></div>
 <div class="field"><label for="pipelineDirection">Creative direction</label><textarea id="pipelineDirection">Original educational Shorts with a startling visual hook, technically careful explanations, realistic 3D cutaways, 35–45 seconds, clear narration and large captions. Focus on physical mechanisms rather than trivia.</textarea></div>
-<div class="actions"><button class="btn ghost" id="pipelineLoadFive">Use our 5 researched videos</button></div><div class="actions"><button class="btn primary" id="pipelineResearch">1 · Research via vidIQ</button><button class="btn ghost" id="pipelineGenerate" disabled>2 · Write scripts + SEO</button><button class="btn ghost" id="pipelineQueue" disabled>3 · Send to render queue</button></div>
+<section class="card" style="background:#191622;margin:12px 0">
+<h3>Add your own new video</h3><div class="field"><label for="newVideoTitle">Video title</label><input class="input" id="newVideoTitle" placeholder="e.g. Why Water Towers Work"></div>
+<div class="field"><label for="newVideoScript">Narration script</label><textarea id="newVideoScript" placeholder="Paste the narration you want Revid to speak"></textarea></div>
+<div class="field"><label for="newVideoPrompt">Visual prompt (optional)</label><textarea id="newVideoPrompt" placeholder="Describe the scenes and animation style"></textarea></div>
+<div class="actions"><button class="btn primary" id="newAddVideo">Add to New Video Queue</button></div>
+</section><div class="actions"><button class="btn primary" id="pipelineResearch">1 · Research via vidIQ</button><button class="btn ghost" id="pipelineGenerate" disabled>2 · Write scripts + SEO</button><button class="btn ghost" id="pipelineQueue" disabled>3 · Add drafts to New Video Queue</button></div>
 <div class="tiny" id="pipelineStatus" role="status" aria-live="polite" style="margin:12px 0">Connect vidIQ, Gemini and Revid in API connections. Research does not trigger a Revid render.</div>
 <div class="videolist" id="pipelineRefs"></div>
-<h3 style="font-size:14px;margin-top:18px">Generated videos</h3><div class="videolist" id="pipelineDrafts"><span class="tiny">No drafts yet.</span></div>
+<h3 style="font-size:14px;margin-top:18px">New video drafts</h3><div class="videolist" id="pipelineDrafts"><span class="tiny">No drafts yet.</span></div>
+<section class="card" id="newRenderWorkspace"><h3>Send New Videos to Revid</h3>
+<p class="tiny">Import a batch or add your own script above, estimate credits, then confirm before creating new Revid videos.</p>
+<div id="newRenderControls"></div><div class="tiny" id="newRenderSummary"></div><div class="videolist" id="newBatchList"></div></section>
 </section>
 <section class="card tab-panel" id="batchPanel">
-<div class="cardhead"><div><h2>Render + Publish</h2><p>Import video scripts, estimate the cost, render up to five simultaneously, review each result, and explicitly approve YouTube publishing.</p></div><div class="number">B</div></div>
-<div class="notice good"><b>Production:</b> Drafts from Research + Create arrive here automatically. Estimate Revid credits, approve the render spend, keep Clip Farm open while rendering, preview finished videos, then approve publishing individually.</div>
+<div class="cardhead"><div><h2>Publish Existing Revid Videos</h2><p>Load videos already created in Revid, add researched YouTube metadata, preview, approve, and publish.</p></div><div class="number">2</div></div>
+<div class="notice good">Existing Revid projects only. This screen never starts a new render or spends rendering credits.</div>
 <div class="actions"><button class="btn ghost" id="batchTemplate">Download JSON example</button><button class="btn ghost" id="batchExport">Export queue/status</button></div>
 <div class="field"><label for="batchFile">Import video batch (.json)</label><input id="batchFile" type="file" accept=".json,application/json" class="input"><small>Format: title, script, prompt, stylePrompt, referenceUrl, and optional seo: {title, description, primaryKeyword, tags}. Importing replaces the visible queue; it does not start rendering.</small></div>
 <div class="field"><label for="batchJson">Or paste a JSON array</label><textarea id="batchJson" style="min-height:110px" placeholder='[{"title":"Why Elevators Are Safe","script":"...","prompt":"3D elevator cutaway...","referenceUrl":"https://www.youtube.com/watch?v=..."}]'></textarea></div>
@@ -68,14 +76,14 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="field"><label for="batchConcurrency">Simultaneous Revid jobs</label><select id="batchConcurrency"><option value="1">1 at a time · safest</option><option value="2">2 at once</option><option value="3">3 at once</option><option value="5" selected>5 at once · depends on Revid account limits</option></select><small>Separate videos are submitted as separate Revid jobs. Parallel rendering may be rate-limited by Revid. Your credits are estimated for all selected jobs.</small></div><div class="actions"><button class="btn" id="batchImport">Import / replace queue</button><button class="btn" id="batchEstimate">Estimate selected credits</button><button class="btn primary" id="batchStart" disabled>Start selected renders</button><button class="btn ghost" id="batchStop" disabled>Stop submitting new jobs</button></div>
 <div class="tiny" id="batchSummary" style="margin:12px 0">No videos imported. Revid credits are charged only when a render is submitted.</div>
 <section class="card" style="margin:16px 0;background:#16121e">
-<h3 style="margin:0 0 4px">Use videos already made in Revid</h3>
+<h3 style="margin:0 0 4px">Your Revid video library</h3>
 <p class="tiny">Load your existing Revid projects, select the videos to prepare, and generate or import their YouTube SEO. Project IDs keep all metadata with the right video. No new renders.</p>
 <div class="actions"><button class="btn primary" id="existingLoadProjects">1 · Load Revid videos</button><button class="btn ghost" id="existingGenerateSeo">2 · Create SEO for selected videos</button></div>
-<div class="actions"><label class="btn ghost" for="existingSeoImport">Import SEO JSON package</label><input type="file" id="existingSeoImport" accept=".json,application/json" style="position:absolute;left:-9999px" aria-label="Import SEO JSON package"><button class="btn ghost" id="existingSeoExport">Download matched SEO package</button><button class="btn ghost" id="existingLoadSeo">Use our 5 older SEO topics</button></div>
+<div class="actions"><label class="btn ghost" for="existingSeoImport">Import SEO JSON package</label><input type="file" id="existingSeoImport" accept=".json,application/json" style="position:absolute;left:-9999px" aria-label="Import SEO JSON package"><button class="btn ghost" id="existingSeoExport">Download matched SEO package</button></div>
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
-<div class="field"><label>Revid-connected YouTube account</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Connect your YouTube channel in Revid. Publishing requires per-video approval. Publishing uses the researched title and description; YouTube keyword tags may still need to be pasted into YouTube Studio because the Revid API does not document a YouTube tags field.</small></div><div class="videolist" id="batchList"></div>
+<div class="field"><label>Your YouTube publishing channel</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Click Load accounts to find the YouTube channel already connected in Revid. If none appears, connect it in Revid Settings → Integrations. Revid sends the approved title and description; copy tags to YouTube Studio when needed.</small></div><h3 style="margin-top:18px">SEO-ready Revid videos</h3><div class="videolist" id="batchList"></div>
 </section><section class="card tab-panel" id="keywordPanel"><div class="cardhead"><div><h2>Google keyword metrics</h2><p>Enter a keyword to see estimated monthly searches, historical volume, competition, bids, and related keyword ideas.</p></div><div class="number">K</div></div><div class="row"><div class="field"><label for="keyword">Keyword or topic</label><input class="input" id="keyword" placeholder="e.g. perfume layering"></div><div class="field"><label for="location">Search location</label><select id="location"><option value="United States">United States</option><option value="Worldwide">Worldwide</option><option value="United Kingdom">United Kingdom</option><option value="Canada">Canada</option><option value="Australia">Australia</option><option value="India">India</option></select></div></div><div class="actions"><button class="btn primary" id="trendBtn">Get keyword metrics</button></div><div class="result" id="trendResult" style="margin-top:14px"><div class="analysis-grid"><div class="analysis-part"><b>AVG. MONTHLY SEARCHES</b><p id="searchVolume">Not available</p></div><div class="analysis-part"><b>ADS COMPETITION</b><p id="adsCompetition">Not available</p></div><div class="analysis-part"><b>COMPETITION INDEX</b><p id="competitionIndex">Not available</p></div><div class="analysis-part"><b>TOP-OF-PAGE BID RANGE</b><p id="bidRange">Not available</p></div></div><div id="trendChart" style="display:flex;align-items:end;height:130px;gap:3px;margin-top:14px"></div><div id="trendDates" class="tiny"></div><div class="field"><label>Related keyword ideas</label><div id="relatedList"></div></div><div class="tiny" id="trendNote"></div></div><div class="notice good" style="margin-top:13px">Google Ads API keyword research is free to call. This feature only reads estimates; it never creates ads or spends campaign budget. Add Google OAuth credentials and a Google Ads customer ID in API connections. Metrics are Google Search estimates; the competition score describes ad placement competition, not organic ranking difficulty.</div></section>
 </main><aside class="rail">
 <section class="card"><h3>API connections</h3><p>Keys are saved only in this browser or app profile. The app sends each key to its provider when you use that feature. Clear saved keys any time.</p><div class="field"><label for="geminiKey">Gemini API key</label><input class="input" id="geminiKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="revidKey">Revid API key</label><input class="input" id="revidKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="vidiqKey">vidIQ MCP API key</label><input class="input" id="vidiqKey" type="password" autocomplete="off" placeholder="Create in vidIQ Account Settings → MCP"><small><a href="https://app.vidiq.com/account/settings/mcp" target="_blank" rel="noreferrer">Get vidIQ API key</a> · Uses vidIQ credits.</small></div><div class="legacy-setup"><div class="field"><label for="apifyKey">Apify API token · social link extraction</label><input class="input" id="apifyKey" type="password" autocomplete="off" placeholder="Paste token"></div><details class="field"><summary style="cursor:pointer;font-size:12px;font-weight:700">Google Ads keyword API connection</summary><p class="tiny" style="margin:7px 0">Enable the Google Ads API in your Cloud project and request Explorer access for live account data. Generate OAuth credentials and a refresh token with the <code>https://www.googleapis.com/auth/adwords</code> scope, then enter them below. Test-only access cannot query live accounts. These credentials are saved only in this browser or app profile.</p><div class="field"><label for="adsClientId">OAuth client ID</label><input class="input" id="adsClientId" autocomplete="off" placeholder="Google Cloud OAuth client ID"></div><div class="field"><label for="adsClientSecret">OAuth client secret</label><input class="input" id="adsClientSecret" type="password" autocomplete="off" placeholder="Google Cloud OAuth client secret"></div><div class="field"><label for="adsRefreshToken">OAuth refresh token</label><input class="input" id="adsRefreshToken" type="password" autocomplete="off" placeholder="Refresh token with adwords scope"></div><div class="field"><label for="adsCustomerId">Google Ads customer ID</label><input class="input" id="adsCustomerId" inputmode="numeric" autocomplete="off" placeholder="10 digits, no hyphens"></div><div class="field"><label for="adsLoginCustomerId">Manager customer ID · optional</label><input class="input" id="adsLoginCustomerId" inputmode="numeric" autocomplete="off" placeholder="Only if accessing through a manager"></div><div class="tiny"><a href="https://console.cloud.google.com/apis/library/googleads.googleapis.com" target="_blank" rel="noreferrer">Enable Google Ads API</a> · <a href="https://developers.google.com/google-ads/api/docs/productionize/access-levels" target="_blank" rel="noreferrer">Request Explorer access</a> · <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noreferrer">OAuth Playground</a>. Use your own OAuth client in the Playground and the <code>adwords</code> scope. Cloud project access replaces the old developer-token setup.</div></details></div><div class="actions"><button class="btn small primary" id="saveKeysBtn">Save keys</button><button class="btn small ghost" id="forgetBtn">Clear saved keys</button><span class="tiny" id="keysStatus" role="status" aria-live="polite"></span></div><div class="tiny" style="margin-top:8px">vidIQ supplies video intelligence; Gemini generates scripts and metadata; Revid renders and publishes to connected YouTube accounts.</div></section>
@@ -169,10 +177,36 @@ try{let t=$("visualType").value,m=t==="anime"?{type:"ai-video",videoModel:"pro",
 async function poll(){if(!S.pid)return;try{let x=await api("/api/revid/status",{key:keys().revid,pid:S.pid}),d=x.data||x,st=d.status||d.state||"rendering",u=d.videoUrl||d.video_url||d.url;$("renderStatus").textContent="Render "+S.pid+" · "+st;if(u){$("draftVideo").src=u;$("draftVideo").style.display="block";$("openDraft").href=u;$("openDraft").style.display="inline-block";say("Draft ready")}else if(st!=="failed")setTimeout(poll,9000)}catch(e){$("renderStatus").textContent=e.message}}
 $("refreshBtn").onclick=poll;
 
-/* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
+/* Two queues: new Revid render jobs and existing Revid projects with SEO. */
+
+function arrangeNewVideoControls(){
+ const host=$("newRenderControls");
+ const move=(id,selector)=>{const node=$(id)?.closest(selector);if(!node)throw Error("Missing new video control "+id);host.appendChild(node)};
+ move("batchTemplate",".actions");
+ move("batchFile",".field");
+ move("batchJson",".field");
+ move("batchMode",".field");
+ move("batchStyle",".row");
+ move("batchConcurrency",".field");
+ move("batchImport",".actions");
+ host.appendChild($("batchSummary"));
+ $("newRenderSummary").textContent="Only new video jobs appear here. Existing Revid projects are not rendered again.";
+}
+arrangeNewVideoControls();
+$("newAddVideo").onclick=()=>{
+ if(batchRunning)return alert("Finish active Revid rendering before adding another video.");
+ const title=$("newVideoTitle").value.trim(),script=$("newVideoScript").value.trim(),promptText=$("newVideoPrompt").value.trim();
+ if(!title||!script)return alert("Give the new video a title and narration script.");
+ const item=batchRead([{title,script,prompt:promptText,seo:{title,description:"",primaryKeyword:"",tags:[]}}])[0];
+ item.origin="new";item.selected=true;batchJobs.push(item);batchInvalidate();
+ $("newVideoTitle").value="";$("newVideoScript").value="";$("newVideoPrompt").value="";
+ say("Added new video to Revid rendering queue. Estimate credits before submitting.");
+ $("newRenderWorkspace").scrollIntoView({behavior:"smooth"});
+};
+
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[],existingSeoBusy=false;
-const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
+const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
 function batchRead(input){
@@ -194,32 +228,35 @@ function batchRead(input){
 function batchMedia(){let t=$("batchStyle").value;return t==="anime"?{type:"ai-video",videoModel:"pro",mediaPreset:"ANIME"}:t==="motion-graphics"?{type:"motion-graphics",videoModel:"pro",mediaPreset:"MOTION_INSPIRATION_DARK_SAAS"}:t==="stock-video"?{type:"stock-video"}:{type:"ai-video",videoModel:"pro"}}
 function batchPayload(v){const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40};return {workflow:mode,source,aspectRatio:"9:16",media:batchMedia(),voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
 function batchDraw(){
- const active=batchJobs.filter(j=>j.selected),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
+ const active=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
  $("batchStart").disabled=batchRunning||!active.length||!batchEstimated||active.some(j=>j.credits===null||j.status!=="Ready");
  $("batchStop").disabled=!batchRunning;
- $("batchSummary").textContent=batchJobs.length+" videos imported · "+active.length+" selected · "+batchJobs.filter(j=>j.status==="Complete").length+" complete · "+batchJobs.filter(j=>j.approved).length+" approved · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
- $("batchList").innerHTML=batchJobs.map((v,i)=>{
+ $("batchSummary").textContent=batchJobs.filter(j=>j.origin!=="existing").length+" new video jobs · "+active.length+" selected · "+batchJobs.filter(j=>j.origin!=="existing"&&j.status==="Complete").length+" rendered · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
+ const cards=batchJobs.map((v,i)=>{
   const tags=Array.isArray(v.tags)?v.tags:[],published=["Submitted","Published","Processing"].includes(v.publishStatus);
   return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div>'+
-  '<p>Video '+(i+1)+' · Estimated credits: '+(v.credits===null?"not estimated":v.credits)+' · '+esc(v.error||"")+'</p>'+
-  '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · Publish: '+esc(v.publishStatus||"Not submitted")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
+  '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
+  '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
-  '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
+  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> ')+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
-  (v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
+  (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
   '</div>';
- }).join("");
+ });
+ $("batchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin==="existing").join("")||'<span class="tiny">No SEO-ready Revid videos yet. Load projects and create SEO above.</span>';
+ $("newBatchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin!=="existing").join("")||'<span class="tiny">No new videos queued yet.</span>';
 }
 function batchInvalidate(){batchEstimated=false;for(const j of batchJobs)if(!["Complete","Rendering"].includes(j.status))j.credits=null;batchPersist();batchDraw()}
 $("batchFile").onchange=async e=>{try{$("batchJson").value=await e.target.files[0].text()}catch(err){alert(err.message)}};
-$("batchImport").onclick=()=>{if(batchRunning)return;try{batchJobs=batchRead(JSON.parse($("batchJson").value));batchInvalidate();say("Batch imported — estimate credits before rendering")}catch(e){alert("Import error: "+e.message)}};
+$("batchImport").onclick=()=>{if(batchRunning)return;try{const drafts=batchRead(JSON.parse($("batchJson").value)).map(j=>({...j,origin:"new"}));if(batchJobs.some(j=>j.origin!=="existing"&&!["Rendering","Submitting"].includes(j.status))&&!confirm("Replace current new-video drafts? Existing Revid SEO will be kept."))return;batchJobs=[...batchJobs.filter(j=>j.origin==="existing"||["Rendering","Submitting"].includes(j.status)),...drafts];batchInvalidate();say("New videos imported — estimate credits before rendering")}catch(e){alert("Import error: "+e.message)}};
 $("batchTemplate").onclick=()=>{const x=[{title:"How Elevators Stay Safe",script:"What happens if an elevator cable breaks? Modern elevators have several safety systems...",prompt:"Show realistic 3D elevator cutaway with safety ropes and brakes.",stylePrompt:"9:16 realistic 3D animation, fifth-grade explanation, large captions.",referenceUrl:"",seo:{title:"How Elevators Keep You Safe",description:"Learn how elevator safety systems work.",primaryKeyword:"elevator safety systems",tags:["elevator safety","engineering","how elevators work"]}}];batchDownload("clipfarm-batch-example.json",x)};
 function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh;
+ if(videoRefresh!==undefined){const j=batchJobs[Number(videoRefresh)];try{const x=await api("/api/revid/status",{key:keys().revid,pid:j.pid}),d=x.data||x,u=batchSafeUrl(d.videoUrl||d.video_url||d.url||"");if(!u)throw Error("Revid has not returned an exported video URL. Finish exporting this project in Revid.");j.videoUrl=u;j.status="Complete";batchPersist();batchDraw();say("Existing Revid video ready for review")}catch(err){alert(err.message)}return}
  if(copy!==undefined){const j=batchJobs[Number(copy)];try{await navigator.clipboard.writeText((j.seoTitle||j.title)+"\n\n"+j.seoDescription+"\n\nTAGS FOR YOUTUBE STUDIO: "+(j.tags||[]).join(", "));say("YouTube title, description and tags copied")}catch(e){alert(e.message)}return}
  if(refresh!==undefined){await batchPublishStatus(Number(refresh));return}
  if(p!==undefined){await publishBatchVideo(+p);return}
@@ -232,11 +269,13 @@ $("batchList").onclick=async e=>{
   j.seoTitle=title.trim().slice(0,100);j.seoDescription=description.slice(0,5000);j.primaryKeyword=keyword.trim();
   j.tags=tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,50);batchPersist();batchDraw();return;
  }
- if(i===undefined)return;const j=batchJobs[+i];if(batchRunning)return alert("Stop the batch before editing.");
+ if(i===undefined)return;const j=batchJobs[+i];if(j.origin==="existing")return alert("Existing Revid videos are already rendered. Edit SEO instead of the narration.");if(batchRunning)return alert("Stop the batch before editing.");
  const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");
  j.script=next;j.status="Ready";j.pid="";j.videoUrl="";j.approved=false;j.publishStatus="";j.youtubeUrl="";batchInvalidate();
 };
 
+$("newBatchList").onchange=e=>$("batchList").onchange(e);
+$("newBatchList").onclick=e=>$("batchList").onclick(e);
 function existingProjectsNormalize(raw){
  const root=raw?.data??raw;
  const candidates=Array.isArray(root)?root:(root?.projects||root?.items||root?.results||root?.data?.projects||root?.data?.items||[]);
@@ -250,16 +289,20 @@ function existingProjectsNormalize(raw){
  })).filter(p=>p.pid);
 }
 function existingDrawProjects(){
- const choices=PREPARED_FIVE.map((p,i)=>'<option value="'+i+'">'+esc(p.seo.title)+'</option>').join("");
- $("existingProjects").innerHTML=existingProjects.map((p,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label><span class="badge">'+esc(p.status||"Status unknown")+'</span></div>'+
- '<p class="tiny">Revid project: '+esc(p.pid)+(p.sourceText?' · Source content available':' · Title-only SEO needs review')+'</p>'+
- (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
- '<div class="field"><label for="existingMatch'+i+'">Or match an older researched topic</label><select id="existingMatch'+i+'" class="input"><option value="">Select one of our original five topics</option>'+choices+'</select></div>'+
- '<div class="actions"><button class="btn small ghost" data-existing-match="'+i+'">Attach older SEO package</button></div></div>').join("")||'<span class="tiny">No existing Revid projects found.</span>';
+ const linked=new Map(batchJobs.filter(j=>j.origin==="existing").map(j=>[j.pid,j]));
+ $("existingProjects").innerHTML=existingProjects.map((p,i)=>{
+  const j=linked.get(p.pid);
+  return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label>'+
+   '<span class="badge">'+(j?.seoTitle?"SEO prepared":"Needs SEO")+'</span></div>'+
+   '<p class="tiny">Revid project ID: '+esc(p.pid)+(p.sourceText?' · Content available':' · Title-only: review SEO')+'</p>'+
+   (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
+   (j?.seoTitle?'<p class="tiny">YouTube title: '+esc(j.seoTitle)+'</p>':'')+'</div>';
+ }).join("")||'<span class="tiny">No Revid projects found yet.</span>';
 }
+
 $("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;const count=existingProjects.filter(p=>p.selected).length;$("existingStatus").textContent=count+" projects selected for SEO preparation."};
 function seoBundle(){
- return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
+ return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.origin==="existing"&&j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
 }
 $("existingSeoExport").onclick=()=>{const bundle=seoBundle();if(!bundle.videos.length)return alert("No matched Revid SEO records to export.");batchDownload("clipfarm-youtube-seo-package.json",bundle)};
 function seoVerify(input){
@@ -279,15 +322,15 @@ function seoAttach(records){
  if(!existingProjects.length)throw Error("Load your existing Revid videos before importing metadata. This prevents mismatched project IDs.");
  const projectById=new Map(existingProjects.map(p=>[p.pid,p])),unknown=records.filter(r=>!projectById.has(r.pid));
  if(unknown.length)throw Error(unknown.length+" project IDs do not exist in the loaded Revid account: "+unknown.slice(0,3).map(x=>x.pid).join(", ")+". Nothing imported.");
- const statuses=new Map(batchJobs.filter(j=>j.pid).map(j=>[j.pid,j]));const target=new Map(statuses);
+ const statuses=new Map(batchJobs.filter(j=>j.pid&&j.origin==="existing").map(j=>[j.pid,j]));const target=new Map(statuses);
  for(const r of records){
   const p=projectById.get(r.pid),prior=statuses.get(r.pid);
   if(prior?.publishContentId||["Published","Submitted","Processing","Submitting"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a submitted YouTube publishing request. Verify it before changing metadata.");
   const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
-   pid:p.pid,videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
+   pid:p.pid,origin:"existing",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
   target.set(r.pid,item);
  }
- batchJobs=[...batchJobs.filter(j=>!j.pid),...target.values()];batchPersist();batchDraw();return records.length;
+ batchJobs=[...batchJobs.filter(j=>j.origin!=="existing"),...target.values()];batchPersist();batchDraw();existingDrawProjects();return records.length;
 }
 $("existingSeoImport").onchange=async e=>{
  try{
@@ -298,12 +341,6 @@ $("existingSeoImport").onchange=async e=>{
  }catch(err){alert("SEO package import failed: "+err.message)}finally{e.target.value=""}
 };
 
-$("existingLoadSeo").onclick=()=>{
- if(batchJobs.length&&!confirm("Replace the current queue with our five researched SEO packages? This discards existing video matches and publication status saved in Clip Farm."))return;
- if(batchJobs.some(j=>j.status==="Rendering"||j.status==="Submitting"))return alert("Existing renders are active. Finish them before changing this queue.");
- batchJobs=batchRead(PREPARED_FIVE).map((v,i)=>({...v,research:PREPARED_FIVE[i].research,selected:false}));
- batchInvalidate();$("existingStatus").textContent="Five original SEO packages loaded. No Revid rendering started. Choose an existing Revid video and match it.";
-};
 $("existingGenerateSeo").onclick=async()=>{
  if(existingSeoBusy)return;
  const k=keys(),projects=existingProjects.filter(p=>p.selected);
@@ -333,34 +370,6 @@ $("existingLoadProjects").onclick=async()=>{
  try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects loaded. Select the 21 you want, then Create SEO. Nothing will be published until you approve."}
  catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
  finally{b.disabled=false}
-};
-$("existingProjects").onclick=async e=>{
- const button=e.target.closest("[data-existing-match]");if(!button)return;
- const p=existingProjects[Number(button.dataset.existingMatch)],select=$("existingMatch"+button.dataset.existingMatch);
- const index=Number(select?.value);if(!select?.value||!Number.isInteger(index)||!PREPARED_FIVE[index])return alert("Choose the correct SEO topic for this Revid video.");
- if(!keys().revid)return alert("Save your Revid API key first.");
- if(batchRunning)return alert("Finish the active batch before attaching an existing video.");
- if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ")&& !confirm("Replace the current batch with our five researched SEO packages?"))return;
- const selected=PREPARED_FIVE[index];
- if(!confirm('Match Revid video "'+p.name+'" with the SEO package "'+selected.seo.title+'"? No new video will be rendered.'))return;
- button.disabled=true;$("existingStatus").textContent="Verifying the existing Revid video has finished exporting…";
- try{
-  const x=await api("/api/revid/status",{key:keys().revid,pid:p.pid}),d=x.data||x;
-  const status=String(d.status||d.state||p.status||"").toLowerCase();
-  const url=batchSafeUrl(d.videoUrl||d.video_url||d.url||p.videoUrl);
-  if(!url||["failed","error","rendering","queued","processing","pending"].includes(status))throw Error("This Revid project doesn't yet have a finished video URL. Finish/export it in Revid and reload projects.");
-  if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ"))batchJobs=[];
-  const existing=batchJobs.find(j=>j.research?.source==="vidIQ"&&j.seoTitle===selected.seo.title);
-  const already=batchJobs.find(j=>j.pid===p.pid&&j!==existing);
-  if(already)throw Error("This Revid video is already attached to another SEO package.");
-  if(existing?.pid&&existing.pid!==p.pid&&!confirm("Replace the video currently linked to this SEO package?"))return;
-  const item=batchRead([selected])[0];
-  Object.assign(item,{research:selected.research,selected:false,status:"Complete",pid:p.pid,videoUrl:url,credits:0,approved:false,publishStatus:"",youtubeUrl:"",error:""});
-  if(existing){const at=batchJobs.indexOf(existing);batchJobs[at]=item}else batchJobs.push(item);
-  batchEstimated=false;batchPersist();batchDraw();
-  $("existingStatus").textContent="Linked "+p.name+" to its researched YouTube title, description and tags. Preview and approve to publish. No render credits used.";
-  say("Existing Revid video matched to researched SEO.");
- }catch(err){$("existingStatus").textContent=err.message;alert(err.message)}finally{button.disabled=false}
 };
 
 $("batchLoadAccounts").onclick=async()=>{
@@ -392,7 +401,7 @@ async function batchPublishStatus(index){
 }
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
- if(!j||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Video must finish rendering first.");
+ if(!j||j.origin!=="existing"||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Match a completed existing Revid video with its SEO before publishing from this screen.");
  if(!j.approved)return alert("Review and approve the video first.");
  if(!sel.value)return alert("Choose a connected YouTube account.");
  if(j.publishStatus==="Submitted"||j.publishStatus==="Submitting")return alert("Already submitted. Check Revid for status.");
@@ -411,7 +420,7 @@ async function publishBatchVideo(index){
  batchPersist();batchDraw();
 }
 $("batchMode").onchange=batchInvalidate;$("batchStyle").onchange=batchInvalidate;$("batchResolution").onchange=batchInvalidate;
-$("batchEstimate").onclick=async()=>{if(batchRunning)return;if(!batchJobs.some(j=>j.selected))return alert("Select at least one video.");const b=$("batchEstimate");b.disabled=true;try{for(let i=0;i<batchJobs.length;i++){const j=batchJobs[i];if(!j.selected||["Complete","Rendering"].includes(j.status))continue;$("batchSummary").textContent="Estimating "+(i+1)+"/"+batchJobs.length+": "+j.title;const x=await api("/api/revid/estimate",{payload:batchPayload(j)});let n=Number(x.creditsToConsume??x.credits??x.estimatedCredits??x.cost);if(!Number.isFinite(n))throw Error("Revid returned no usable credit estimate for "+j.title);j.credits=n+10}batchEstimated=true;batchPersist();batchDraw()}catch(e){batchEstimated=false;batchDraw();alert("Estimation stopped: "+e.message)}finally{b.disabled=false}};
+$("batchEstimate").onclick=async()=>{if(batchRunning)return;if(!batchJobs.some(j=>j.origin!=="existing"&&j.selected))return alert("Select at least one new video.");const b=$("batchEstimate");b.disabled=true;try{for(let i=0;i<batchJobs.length;i++){const j=batchJobs[i];if(j.origin==="existing"||!j.selected||["Complete","Rendering"].includes(j.status))continue;$("batchSummary").textContent="Estimating "+(i+1)+"/"+batchJobs.length+": "+j.title;const x=await api("/api/revid/estimate",{payload:batchPayload(j)});let n=Number(x.creditsToConsume??x.credits??x.estimatedCredits??x.cost);if(!Number.isFinite(n))throw Error("Revid returned no usable credit estimate for "+j.title);j.credits=n+10}batchEstimated=true;batchPersist();batchDraw()}catch(e){batchEstimated=false;batchDraw();alert("Estimation stopped: "+e.message)}finally{b.disabled=false}};
 $("batchStop").onclick=()=>{batchStop=true;say("No new renders will start; active Revid jobs continue and Clip Farm will keep checking them")};
 async function batchStatus(j){
  for(let attempts=0;attempts<240;attempts++){
@@ -424,7 +433,7 @@ async function batchStatus(j){
  throw Error("Status timed out. Verify the existing Revid job before re-submitting.");
 }
 $("batchStart").onclick=async()=>{
- const selected=batchJobs.filter(j=>j.selected&&j.status==="Ready"),sum=selected.reduce((a,j)=>a+Number(j.credits||0),0);
+ const selected=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),sum=selected.reduce((a,j)=>a+Number(j.credits||0),0);
  if(!selected.length||!batchEstimated)return;
  if(!keys().revid)return alert("Enter your Revid key in API connections.");
  const concurrency=Math.min(5,Math.max(1,Number($("batchConcurrency").value)||1));
@@ -454,9 +463,9 @@ $("batchStart").onclick=async()=>{
 
 const PIPELINE_STORE="clipfarm-research-drafts-v1";let pipelineKeywords=[];
 let pipelineRefs=[],pipelineDrafts=[];
-const PREPARED_FIVE=[{"title":"Why This Balcony Doesn't Fall Off the Building","script":"Why doesn't this balcony snap off the building? It's a cantilever, so there's no column holding up its outside edge. Instead, the balcony carries its weight back into the building. The biggest bending forces concentrate near that connection. In reinforced concrete designs, steel near the top resists the pulling force while concrete handles compression. If the steel is missing or poorly placed, that connection can crack. The hidden support is what makes the floating balcony possible.","prompt":"Original photorealistic 3D cantilever balcony cutaway: show no outer column, fixed-end bending, top tension reinforcement anchored into building and compression below. Clear mechanical labels and animated loads.","referenceUrl":"https://www.youtube.com/watch?v=vzZWyquMpI8","seo":{"title":"Why This Balcony Doesn't Fall Off the Building","description":"A floating balcony is a cantilever. See how correctly anchored reinforcement and the building structure carry its load. #Engineering #Construction #Shorts","primaryKeyword":"cantilever","tags":["cantilever","cantilever balcony","structural engineering","balcony design","reinforced concrete","engineering explained","building design"]},"research":{"source":"vidIQ","views":8800000,"outlierScore":288,"vph":437.7,"titleScore":96},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How a Skyscraper Is Built From the Inside Out","script":"How do you build a skyscraper without the entire structure collapsing halfway through? First, engineers create a foundation that transfers enormous loads into the ground. Then the core and structural frame rise in carefully planned stages. Floors tie the structure together, while cranes lift steel and concrete materials higher as the tower grows. The core helps resist side forces from wind. Every new floor depends on the supports below it. A skyscraper isn't one giant pour. It's a carefully sequenced system.","prompt":"3D cutaway of modern skyscraper construction stages showing foundation, reinforced core, columns, floor plates, cranes, temporary formwork and wind-load arrows. Original educational vertical animation.","referenceUrl":"https://www.youtube.com/watch?v=MtMV-i28meI","seo":{"title":"How a Skyscraper Is Built From the Inside Out","description":"A 3D cutaway explains the construction sequence behind modern skyscrapers—from foundation and structural core to floors and wind resistance. #Skyscraper #Engineering #Shorts","primaryKeyword":"skyscraper construction","tags":["skyscraper construction","how skyscrapers are built","building construction","structural engineering","construction techniques","engineering shorts"]},"research":{"source":"vidIQ","views":627000,"outlierScore":17,"vph":3200,"titleScore":90},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How Venice's Buildings Stand on Wooden Piles","script":"Venice looks like a city floating on water, but thousands of old buildings stand on foundations built in muddy ground. Builders drove closely spaced timber piles into the lagoon soil and constructed platforms above them. Here's the surprising part: wood kept permanently underwater can decay much more slowly because there's very little oxygen for fungi. It doesn't turn to stone, and the piles aren't indestructible. But with the right conditions, wood foundations can support buildings for centuries. The engineering is hidden beneath the canals.","prompt":"3D cinematic Venice canal cutaway showing closely spaced submerged timber foundation piles embedded in muddy soil supporting masonry above. Show submerged low-oxygen condition, structural load paths; no petrification myth.","referenceUrl":"https://www.youtube.com/watch?v=3c-bC4PswlU","seo":{"title":"How Venice's Buildings Stand on Wooden Piles","description":"How was Venice built on muddy islands? Explore the timber pile foundations beneath historic buildings and why waterlogged wood can survive for centuries. #Venice #Engineering #Shorts","primaryKeyword":"how venice was built","tags":["how Venice was built","Venice foundations","wooden piles","ancient engineering","Venice canals","how buildings stand","engineering explained"]},"research":{"source":"vidIQ","views":9800000,"outlierScore":0.6,"vph":122.7,"titleScore":88},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"Why the Burj Khalifa Is Designed to Move","script":"The Burj Khalifa is incredibly tall, but engineers didn't design it to be perfectly motionless. Wind pushes on skyscrapers, creating sideways forces and vibration. The Burj Khalifa's Y-shaped buttressed core gives the tower stability, while its changing setbacks help prevent the wind from pushing rhythmically on one shape all the way up. In wind tunnels, engineers tested ways to reduce movement. The secret isn't making the tower totally rigid. It's shaping the structure so it handles wind safely.","prompt":"Original Burj Khalifa 3D wind-tunnel structural explanation: overhead Y-shaped buttressed core, tower setbacks, vortex shedding, modest realistic sway and labeled load paths. No exaggerated bending.","referenceUrl":"https://www.youtube.com/watch?v=-_VKn52jFJY","seo":{"title":"Why the Burj Khalifa Is Designed to Move","description":"Why does the Burj Khalifa move in the wind? Its Y-shaped buttressed core and changing setbacks reduce wind forces and vibration. #BurjKhalifa #Engineering #Shorts","primaryKeyword":"burj khalifa","tags":["Burj Khalifa","Burj Khalifa engineering","skyscraper sway","buttressed core","wind engineering","structural engineering","Dubai architecture"]},"research":{"source":"vidIQ","views":560300,"outlierScore":61,"vph":350.5,"titleScore":87},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How Engineers Dig Below a Building Without Collapse","script":"What happens when construction crews need to dig deeper than the foundation of a building next door? Just scooping out the dirt could remove the support holding that building up. Engineers may first install a retaining system to hold back the soil, then use shoring, bracing, or underpinning to protect the neighboring foundation. Excavation happens in planned stages, with movement carefully monitored. The important part isn't how fast they dig. It's making sure the building above never loses the support it needs.","prompt":"Original accurate 3D excavation cutaway beside an existing building showing risk to nearby footings, designed retaining wall, shoring, struts, underpinning, movement monitoring and safe staged excavation.","referenceUrl":"https://www.youtube.com/watch?v=qAQx6dXrnx8","seo":{"title":"How Engineers Dig Below a Building Without Collapse","description":"How can engineers excavate below a neighboring building's foundation? See how shoring, bracing and underpinning protect surrounding structures. #Excavation #Engineering #Shorts","primaryKeyword":"excavation","tags":["excavation","underpinning","shoring","foundation engineering","construction safety","retaining wall","structural engineering"]},"research":{"source":"vidIQ","views":120600,"outlierScore":95,"vph":121.9,"titleScore":84},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."}];
+
 function pipelineSave(){try{localStorage.setItem(PIPELINE_STORE,JSON.stringify({refs:pipelineRefs,keywords:pipelineKeywords,drafts:pipelineDrafts,topic:$("pipelineTopic").value,direction:$("pipelineDirection").value}))}catch(e){}}
-$("pipelineLoadFive").onclick=()=>{if(pipelineDrafts.length&&!confirm("Replace the current drafts with the five videos already researched?"))return;pipelineDrafts=batchRead(PREPARED_FIVE).map((v,i)=>({...v,seo:{title:v.seoTitle,description:v.seoDescription,primaryKeyword:v.primaryKeyword,tags:v.tags},research:PREPARED_FIVE[i].research,selected:true}));pipelineRefs=PREPARED_FIVE.map(v=>({url:v.referenceUrl,summary:v.title,platform:"youtube",engagement:{views:v.research.views},outlierScore:v.research.outlierScore,vph:v.research.vph,selected:true}));pipelineKeywords=PREPARED_FIVE.map(v=>({keyword:v.seo.primaryKeyword}));pipelineSave();pipelineDraw();$("pipelineStatus").textContent="Five researched packages loaded with their existing scripts, SEO and vidIQ results. No Gemini regeneration or Revid credits used. Review and send to render queue.";say("Five previously researched packages loaded");};
+
 function pipelineRefUrl(v){const u=String(v.url||v.postUrl||v.post_url||"");return batchSafeUrl(u)}
 function pipelineScore(v){const m=v.engagement||{};const views=Number(m.views??v.views)||0,likes=Number(m.likes??v.likes)||0,outlier=Number(v.outlierScore)||0;return outlier*1000+(views?Math.log10(views+1)*100+100*likes/Math.max(views,1):0)}
 function pipelineDraw(){
@@ -504,14 +513,14 @@ $("pipelineQueue").onclick=()=>{
  if(batchRunning)return alert("Finish the active batch before replacing its queue.");
  const selected=pipelineDrafts.filter(v=>v.selected);if(!selected.length)return alert("Select at least one generated draft.");
  if(batchJobs.some(v=>["Rendering","Submitting"].includes(v.status)))return alert("Current Revid renders are still active. Finish those before replacing the queue.");
- if(batchJobs.length&&!confirm("Replace the current Batch Production queue with "+selected.length+" researched drafts? Existing queue statuses will be replaced."))return;
- batchJobs=batchRead(selected.map(v=>({...v,research:v.research||null,seo:{title:v.seoTitle||v.seo?.title||v.title,description:v.seoDescription||v.seo?.description||"",primaryKeyword:v.primaryKeyword||v.seo?.primaryKeyword||"",tags:v.tags||v.seo?.tags||[]}})));
- batchInvalidate();showTab("batch");say("Research drafts transferred to Batch Production. Estimate credits before rendering.");
+ if(batchJobs.some(j=>j.origin!=="existing"&&!["Rendering","Submitting"].includes(j.status))&&!confirm("Replace new video drafts? Existing Revid SEO will be preserved."))return;
+ const drafts=batchRead(selected.map(v=>({...v,origin:"new",research:v.research||null,seo:{title:v.seoTitle||v.seo?.title||v.title,description:v.seoDescription||v.seo?.description||"",primaryKeyword:v.primaryKeyword||v.seo?.primaryKeyword||"",tags:v.tags||v.seo?.tags||[]}})));batchJobs=[...batchJobs.filter(j=>j.origin==="existing"||["Rendering","Submitting"].includes(j.status)),...drafts];
+ batchInvalidate();say("New scripts moved to Revid creation queue. Estimate credits before rendering.");$("newRenderWorkspace").scrollIntoView({behavior:"smooth"});
 };
 try{const d=JSON.parse(localStorage.getItem(PIPELINE_STORE)||"null");if(d&&typeof d==="object"){pipelineRefs=Array.isArray(d.refs)?d.refs:[];pipelineKeywords=Array.isArray(d.keywords)?d.keywords:[];pipelineDrafts=Array.isArray(d.drafts)?d.drafts:[];if(d.topic)$("pipelineTopic").value=d.topic;if(d.direction)$("pipelineDirection").value=d.direction}}catch(e){}
 pipelineDraw();
 
-try{const saved=JSON.parse(localStorage.getItem(BATCH_STORE)||"[]");if(Array.isArray(saved))batchJobs=saved.map(x=>({...batchDefaults,...x,selected:false}))}catch(e){}batchDraw();
+try{const saved=JSON.parse(localStorage.getItem(BATCH_STORE)||"[]");if(Array.isArray(saved))batchJobs=saved.map(x=>({...batchDefaults,...x,origin:x.origin||((x.pid&&x.status==="Complete"&&(x.credits===0||x.research?.source==="vidIQ keyword research"))?"existing":"new"),selected:false}))}catch(e){}batchDraw();
 
 $("trendBtn").onclick=async()=>{
  let k=keys(),kw=$("keyword").value.trim();
