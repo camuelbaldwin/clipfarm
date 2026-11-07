@@ -539,6 +539,7 @@ async function refreshDirectYoutube(){
   $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected: "+(d.channelTitle||d.channelId||"Unknown channel")+" · Unlisted uploads enabled.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
   $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
  }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
+ guidedDraw();
  return youtubeConnected;
 }
 $("youtubeRefreshConnection").onclick=refreshDirectYoutube;
@@ -582,6 +583,45 @@ $("youtubeUploadAll").onclick=async()=>{
  if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
  if(!confirm("Upload "+eligible.length+" videos to YouTube channel "+(youtubeChannelLabel||"connected channel")+" as UNLISTED with their matching SEO? No videos will be public."))return;
  for(const j of eligible){await uploadToYouTubeUnlisted(j.index,true);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
+};
+$("guidedVideo").onchange=guidedDraw;
+$("guidedRefreshRevid").onclick=()=> $("existingLoadProjects").onclick();
+$("guidedGenerateSeo").onclick=async()=>{
+ const pid=$("guidedVideo").value,p=existingProjects.find(x=>x.pid===pid),j=guidedProject(),k=keys();
+ if(!pid)return alert("Choose a finished Revid video.");
+ if(j?.youtubeId)return alert("This video is already uploaded to YouTube.");
+ if(!k.gemini||!k.vidiq)return alert("Add both Gemini and vidIQ API keys in the API connections panel.");
+ if(j&&j.origin!=="existing"){await generateNewSeo(batchJobs.indexOf(j));guidedDraw();return}
+ if(!p)return alert("Refresh your Revid library before creating SEO for this project.");
+ if(!confirm("Research SEO for "+p.name+" using vidIQ and Gemini? API credits may be consumed."))return;
+ const btn=$("guidedGenerateSeo");btn.disabled=true;
+ $("guidedStatus").textContent="Researching vidIQ keywords and generating Gemini metadata…";
+ try{
+  const d=await api("/api/seo/project",{geminiKey:k.gemini,vidiqKey:k.vidiq,projectId:p.pid,projectTitle:p.name,projectText:p.sourceText||""});
+  const r=seoVerify({format:"clipfarm-seo-v1",videos:[d]})[0];
+  seoAttach([r]);$("guidedStatus").textContent="SEO generated. Check the title, description and tags, then approve.";
+ }catch(err){alert("SEO generation failed: "+err.message);$("guidedStatus").textContent="SEO generation failed: "+err.message}
+ finally{btn.disabled=false;guidedDraw()}
+};
+$("guidedEditSeo").onclick=()=>{
+ const j=guidedProject();if(!j)return alert("Generate or load SEO for this video first.");
+ const i=batchJobs.indexOf(j);if(i<0)return;
+ $("batchList").onclick({target:{dataset:{bseo:String(i)}}});
+};
+$("guidedApprove").onclick=()=>{
+ const j=guidedProject();
+ if(!j||!j.videoUrl||!j.seoTitle?.trim()||!j.seoDescription?.trim())return alert("Complete the video and SEO first.");
+ if(j.youtubeId||j.publishContentId)return alert("Already uploaded; open the existing YouTube video.");
+ if(!confirm("Have you previewed this completed Revid video and reviewed its title, description, hashtags and keyword tags? Approve it for YouTube Unlisted upload?"))return;
+ j.approved=true;batchPersist();batchDraw();$("guidedStatus").textContent="Approved. Click Upload to YouTube Unlisted to start the test.";
+};
+$("guidedUploadUnlisted").onclick=async()=>{
+ const j=guidedProject();if(!j)return alert("Choose the finished video first.");
+ await uploadToYouTubeUnlisted(batchJobs.indexOf(j));
+ guidedDraw();
+ if(j.youtubeId&&j.youtubeVisibility==="unlisted"){
+  $("guidedStatus").innerHTML='Unlisted upload confirmed. <a href="'+esc(j.youtubeUrl)+'" target="_blank" rel="noreferrer">Open uploaded video</a> or <a href="'+esc(youtubeStudioLink(j))+'" target="_blank" rel="noreferrer">review tags and visibility in YouTube Studio</a>. After checking this test, use the bulk upload option for other approved videos.';
+ }
 };
 refreshDirectYoutube();
 $("openUnlistedStudio").onclick=()=>window.open("https://studio.youtube.com","_blank","noopener,noreferrer");
