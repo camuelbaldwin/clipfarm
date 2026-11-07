@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, shell } from "electron";
 import { createServer } from "node:http";
-import { handleYouTube } from "./youtube-upload.mjs";
+import { handleYouTube, restoreYouTubeConnection } from "./youtube-upload.mjs";
 import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -116,6 +116,7 @@ function installMenu() {
 
 app.whenReady().then(async () => {
   try {
+    await restoreYouTubeConnection();
     await startLocalServer();
     installMenu();
     createMainWindow();
