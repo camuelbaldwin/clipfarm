@@ -258,13 +258,17 @@ function existingProjectsNormalize(raw){
  })).filter(p=>p.pid);
 }
 function existingDrawProjects(){
- const choices=PREPARED_FIVE.map((p,i)=>'<option value="'+i+'">'+esc(p.seo.title)+'</option>').join("");
- $("existingProjects").innerHTML=existingProjects.map((p,i)=>'<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label><span class="badge">'+esc(p.status||"Status unknown")+'</span></div>'+
- '<p class="tiny">Revid project: '+esc(p.pid)+(p.sourceText?' · Source content available':' · Title-only SEO needs review')+'</p>'+
- (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
- '<div class="field"><label for="existingMatch'+i+'">Or match an older researched topic</label><select id="existingMatch'+i+'" class="input"><option value="">Select one of our original five topics</option>'+choices+'</select></div>'+
- '<div class="actions"><button class="btn small ghost" data-existing-match="'+i+'">Attach older SEO package</button></div></div>').join("")||'<span class="tiny">No existing Revid projects found.</span>';
+ const linked=new Map(batchJobs.filter(j=>j.origin==="existing").map(j=>[j.pid,j]));
+ $("existingProjects").innerHTML=existingProjects.map((p,i)=>{
+  const j=linked.get(p.pid);
+  return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label>'+
+   '<span class="badge">'+(j?.seoTitle?"SEO prepared":"Needs SEO")+'</span></div>'+
+   '<p class="tiny">Revid project ID: '+esc(p.pid)+(p.sourceText?' · Content available':' · Title-only: review SEO')+'</p>'+
+   (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
+   (j?.seoTitle?'<p class="tiny">YouTube title: '+esc(j.seoTitle)+'</p>':'')+'</div>';
+ }).join("")||'<span class="tiny">No Revid projects found yet.</span>';
 }
+
 $("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;const count=existingProjects.filter(p=>p.selected).length;$("existingStatus").textContent=count+" projects selected for SEO preparation."};
 function seoBundle(){
  return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
@@ -306,12 +310,6 @@ $("existingSeoImport").onchange=async e=>{
  }catch(err){alert("SEO package import failed: "+err.message)}finally{e.target.value=""}
 };
 
-$("existingLoadSeo").onclick=()=>{
- if(batchJobs.length&&!confirm("Replace the current queue with our five researched SEO packages? This discards existing video matches and publication status saved in Clip Farm."))return;
- if(batchJobs.some(j=>j.status==="Rendering"||j.status==="Submitting"))return alert("Existing renders are active. Finish them before changing this queue.");
- batchJobs=batchRead(PREPARED_FIVE).map((v,i)=>({...v,research:PREPARED_FIVE[i].research,selected:false}));
- batchInvalidate();$("existingStatus").textContent="Five original SEO packages loaded. No Revid rendering started. Choose an existing Revid video and match it.";
-};
 $("existingGenerateSeo").onclick=async()=>{
  if(existingSeoBusy)return;
  const k=keys(),projects=existingProjects.filter(p=>p.selected);
@@ -341,34 +339,6 @@ $("existingLoadProjects").onclick=async()=>{
  try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects loaded. Select the 21 you want, then Create SEO. Nothing will be published until you approve."}
  catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
  finally{b.disabled=false}
-};
-$("existingProjects").onclick=async e=>{
- const button=e.target.closest("[data-existing-match]");if(!button)return;
- const p=existingProjects[Number(button.dataset.existingMatch)],select=$("existingMatch"+button.dataset.existingMatch);
- const index=Number(select?.value);if(!select?.value||!Number.isInteger(index)||!PREPARED_FIVE[index])return alert("Choose the correct SEO topic for this Revid video.");
- if(!keys().revid)return alert("Save your Revid API key first.");
- if(batchRunning)return alert("Finish the active batch before attaching an existing video.");
- if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ")&& !confirm("Replace the current batch with our five researched SEO packages?"))return;
- const selected=PREPARED_FIVE[index];
- if(!confirm('Match Revid video "'+p.name+'" with the SEO package "'+selected.seo.title+'"? No new video will be rendered.'))return;
- button.disabled=true;$("existingStatus").textContent="Verifying the existing Revid video has finished exporting…";
- try{
-  const x=await api("/api/revid/status",{key:keys().revid,pid:p.pid}),d=x.data||x;
-  const status=String(d.status||d.state||p.status||"").toLowerCase();
-  const url=batchSafeUrl(d.videoUrl||d.video_url||d.url||p.videoUrl);
-  if(!url||["failed","error","rendering","queued","processing","pending"].includes(status))throw Error("This Revid project doesn't yet have a finished video URL. Finish/export it in Revid and reload projects.");
-  if(batchJobs.length&&!batchJobs.some(j=>j.research?.source==="vidIQ"))batchJobs=[];
-  const existing=batchJobs.find(j=>j.research?.source==="vidIQ"&&j.seoTitle===selected.seo.title);
-  const already=batchJobs.find(j=>j.pid===p.pid&&j!==existing);
-  if(already)throw Error("This Revid video is already attached to another SEO package.");
-  if(existing?.pid&&existing.pid!==p.pid&&!confirm("Replace the video currently linked to this SEO package?"))return;
-  const item=batchRead([selected])[0];
-  Object.assign(item,{research:selected.research,selected:false,status:"Complete",pid:p.pid,videoUrl:url,credits:0,approved:false,publishStatus:"",youtubeUrl:"",error:""});
-  if(existing){const at=batchJobs.indexOf(existing);batchJobs[at]=item}else batchJobs.push(item);
-  batchEstimated=false;batchPersist();batchDraw();
-  $("existingStatus").textContent="Linked "+p.name+" to its researched YouTube title, description and tags. Preview and approve to publish. No render credits used.";
-  say("Existing Revid video matched to researched SEO.");
- }catch(err){$("existingStatus").textContent=err.message;alert(err.message)}finally{button.disabled=false}
 };
 
 $("batchLoadAccounts").onclick=async()=>{
@@ -462,9 +432,9 @@ $("batchStart").onclick=async()=>{
 
 const PIPELINE_STORE="clipfarm-research-drafts-v1";let pipelineKeywords=[];
 let pipelineRefs=[],pipelineDrafts=[];
-const PREPARED_FIVE=[{"title":"Why This Balcony Doesn't Fall Off the Building","script":"Why doesn't this balcony snap off the building? It's a cantilever, so there's no column holding up its outside edge. Instead, the balcony carries its weight back into the building. The biggest bending forces concentrate near that connection. In reinforced concrete designs, steel near the top resists the pulling force while concrete handles compression. If the steel is missing or poorly placed, that connection can crack. The hidden support is what makes the floating balcony possible.","prompt":"Original photorealistic 3D cantilever balcony cutaway: show no outer column, fixed-end bending, top tension reinforcement anchored into building and compression below. Clear mechanical labels and animated loads.","referenceUrl":"https://www.youtube.com/watch?v=vzZWyquMpI8","seo":{"title":"Why This Balcony Doesn't Fall Off the Building","description":"A floating balcony is a cantilever. See how correctly anchored reinforcement and the building structure carry its load. #Engineering #Construction #Shorts","primaryKeyword":"cantilever","tags":["cantilever","cantilever balcony","structural engineering","balcony design","reinforced concrete","engineering explained","building design"]},"research":{"source":"vidIQ","views":8800000,"outlierScore":288,"vph":437.7,"titleScore":96},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How a Skyscraper Is Built From the Inside Out","script":"How do you build a skyscraper without the entire structure collapsing halfway through? First, engineers create a foundation that transfers enormous loads into the ground. Then the core and structural frame rise in carefully planned stages. Floors tie the structure together, while cranes lift steel and concrete materials higher as the tower grows. The core helps resist side forces from wind. Every new floor depends on the supports below it. A skyscraper isn't one giant pour. It's a carefully sequenced system.","prompt":"3D cutaway of modern skyscraper construction stages showing foundation, reinforced core, columns, floor plates, cranes, temporary formwork and wind-load arrows. Original educational vertical animation.","referenceUrl":"https://www.youtube.com/watch?v=MtMV-i28meI","seo":{"title":"How a Skyscraper Is Built From the Inside Out","description":"A 3D cutaway explains the construction sequence behind modern skyscrapers—from foundation and structural core to floors and wind resistance. #Skyscraper #Engineering #Shorts","primaryKeyword":"skyscraper construction","tags":["skyscraper construction","how skyscrapers are built","building construction","structural engineering","construction techniques","engineering shorts"]},"research":{"source":"vidIQ","views":627000,"outlierScore":17,"vph":3200,"titleScore":90},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How Venice's Buildings Stand on Wooden Piles","script":"Venice looks like a city floating on water, but thousands of old buildings stand on foundations built in muddy ground. Builders drove closely spaced timber piles into the lagoon soil and constructed platforms above them. Here's the surprising part: wood kept permanently underwater can decay much more slowly because there's very little oxygen for fungi. It doesn't turn to stone, and the piles aren't indestructible. But with the right conditions, wood foundations can support buildings for centuries. The engineering is hidden beneath the canals.","prompt":"3D cinematic Venice canal cutaway showing closely spaced submerged timber foundation piles embedded in muddy soil supporting masonry above. Show submerged low-oxygen condition, structural load paths; no petrification myth.","referenceUrl":"https://www.youtube.com/watch?v=3c-bC4PswlU","seo":{"title":"How Venice's Buildings Stand on Wooden Piles","description":"How was Venice built on muddy islands? Explore the timber pile foundations beneath historic buildings and why waterlogged wood can survive for centuries. #Venice #Engineering #Shorts","primaryKeyword":"how venice was built","tags":["how Venice was built","Venice foundations","wooden piles","ancient engineering","Venice canals","how buildings stand","engineering explained"]},"research":{"source":"vidIQ","views":9800000,"outlierScore":0.6,"vph":122.7,"titleScore":88},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"Why the Burj Khalifa Is Designed to Move","script":"The Burj Khalifa is incredibly tall, but engineers didn't design it to be perfectly motionless. Wind pushes on skyscrapers, creating sideways forces and vibration. The Burj Khalifa's Y-shaped buttressed core gives the tower stability, while its changing setbacks help prevent the wind from pushing rhythmically on one shape all the way up. In wind tunnels, engineers tested ways to reduce movement. The secret isn't making the tower totally rigid. It's shaping the structure so it handles wind safely.","prompt":"Original Burj Khalifa 3D wind-tunnel structural explanation: overhead Y-shaped buttressed core, tower setbacks, vortex shedding, modest realistic sway and labeled load paths. No exaggerated bending.","referenceUrl":"https://www.youtube.com/watch?v=-_VKn52jFJY","seo":{"title":"Why the Burj Khalifa Is Designed to Move","description":"Why does the Burj Khalifa move in the wind? Its Y-shaped buttressed core and changing setbacks reduce wind forces and vibration. #BurjKhalifa #Engineering #Shorts","primaryKeyword":"burj khalifa","tags":["Burj Khalifa","Burj Khalifa engineering","skyscraper sway","buttressed core","wind engineering","structural engineering","Dubai architecture"]},"research":{"source":"vidIQ","views":560300,"outlierScore":61,"vph":350.5,"titleScore":87},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."},{"title":"How Engineers Dig Below a Building Without Collapse","script":"What happens when construction crews need to dig deeper than the foundation of a building next door? Just scooping out the dirt could remove the support holding that building up. Engineers may first install a retaining system to hold back the soil, then use shoring, bracing, or underpinning to protect the neighboring foundation. Excavation happens in planned stages, with movement carefully monitored. The important part isn't how fast they dig. It's making sure the building above never loses the support it needs.","prompt":"Original accurate 3D excavation cutaway beside an existing building showing risk to nearby footings, designed retaining wall, shoring, struts, underpinning, movement monitoring and safe staged excavation.","referenceUrl":"https://www.youtube.com/watch?v=qAQx6dXrnx8","seo":{"title":"How Engineers Dig Below a Building Without Collapse","description":"How can engineers excavate below a neighboring building's foundation? See how shoring, bracing and underpinning protect surrounding structures. #Excavation #Engineering #Shorts","primaryKeyword":"excavation","tags":["excavation","underpinning","shoring","foundation engineering","construction safety","retaining wall","structural engineering"]},"research":{"source":"vidIQ","views":120600,"outlierScore":95,"vph":121.9,"titleScore":84},"stylePrompt":"9:16 vertical, 35–45 seconds, photorealistic original engineering 3D cutaways, strong 2-second hook, readable captions, clean narration, no copied footage or logos."}];
+
 function pipelineSave(){try{localStorage.setItem(PIPELINE_STORE,JSON.stringify({refs:pipelineRefs,keywords:pipelineKeywords,drafts:pipelineDrafts,topic:$("pipelineTopic").value,direction:$("pipelineDirection").value}))}catch(e){}}
-$("pipelineLoadFive").onclick=()=>{if(pipelineDrafts.length&&!confirm("Replace the current drafts with the five videos already researched?"))return;pipelineDrafts=batchRead(PREPARED_FIVE).map((v,i)=>({...v,seo:{title:v.seoTitle,description:v.seoDescription,primaryKeyword:v.primaryKeyword,tags:v.tags},research:PREPARED_FIVE[i].research,selected:true}));pipelineRefs=PREPARED_FIVE.map(v=>({url:v.referenceUrl,summary:v.title,platform:"youtube",engagement:{views:v.research.views},outlierScore:v.research.outlierScore,vph:v.research.vph,selected:true}));pipelineKeywords=PREPARED_FIVE.map(v=>({keyword:v.seo.primaryKeyword}));pipelineSave();pipelineDraw();$("pipelineStatus").textContent="Five researched packages loaded with their existing scripts, SEO and vidIQ results. No Gemini regeneration or Revid credits used. Review and send to render queue.";say("Five previously researched packages loaded");};
+
 function pipelineRefUrl(v){const u=String(v.url||v.postUrl||v.post_url||"");return batchSafeUrl(u)}
 function pipelineScore(v){const m=v.engagement||{};const views=Number(m.views??v.views)||0,likes=Number(m.likes??v.likes)||0,outlier=Number(v.outlierScore)||0;return outlier*1000+(views?Math.log10(views+1)*100+100*likes/Math.max(views,1):0)}
 function pipelineDraw(){
