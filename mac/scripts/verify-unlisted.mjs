@@ -7,7 +7,7 @@ const read=path=>readFile(resolve(root,path),"utf8");
 const [worker,upload,main,pkg]=await Promise.all([read("worker/index.js"),read("mac/youtube-upload.mjs"),read("mac/main.mjs"),read("mac/package.json")]);
 const packageJson=JSON.parse(pkg);
 assert(packageJson.build.files.includes("youtube-upload.mjs"),"YouTube uploader must be packaged in Mac app");
-assert(main.includes('await handleYouTube(incoming,outgoing'),"Mac desktop must route local YouTube endpoints");
+assert(main.includes('await handleYouTube(incoming, outgoing, requestUrl)'),"Mac desktop must route local YouTube endpoints after session authorization");
 assert(main.includes("await restoreYouTubeConnection()"),"Mac must restore encrypted OAuth tokens on startup");
 assert(upload.includes('privacyStatus:"unlisted"'),"Every direct YouTube upload must request Unlisted visibility");
 assert(upload.includes("snippet:{title,description,tags"),"Video SEO including keyword tags must be uploaded in the same request");

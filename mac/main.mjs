@@ -1,4 +1,5 @@
-import { app, BrowserWindow, Menu, shell } from "electron";
+import { app, BrowserWindow, Menu, shell, ipcMain } from "electron";
+import { newSessionToken, allowedLocalRequest, LOCAL_ORIGIN, SESSION_HEADER } from "./local-auth.mjs";
 import { createServer } from "node:http";
 import { handleYouTube, restoreYouTubeConnection } from "./youtube-upload.mjs";
 import { pathToFileURL } from "node:url";
@@ -9,6 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 let server;
 let localOrigin;
 let mainWindow;
+const sessionToken = newSessionToken();
 
 async function readBody(request, limit = 55 * 1024 * 1024) {
   const chunks = [];
@@ -26,7 +28,20 @@ async function startLocalServer() {
 
   server = createServer(async (incoming, outgoing) => {
     try {
-      if(await handleYouTube(incoming,outgoing,new URL(incoming.url||"/","http://127.0.0.1:43129")))return;
+      const requestUrl = new URL(incoming.url || "/", LOCAL_ORIGIN);
+      const authorized = allowedLocalRequest({
+        pathname: requestUrl.pathname,
+        method: incoming.method || "GET",
+        host: incoming.headers.host,
+        origin: incoming.headers.origin,
+        token: incoming.headers[SESSION_HEADER]
+      }, sessionToken);
+      if (!authorized) {
+        outgoing.writeHead(403, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+        outgoing.end(JSON.stringify({ error: "Local Clip Farm session not authorized. Open Clip Farm Studio and try again." }));
+        return;
+      }
+      if (await handleYouTube(incoming, outgoing, requestUrl)) return;
       const address = server.address();
       const origin = `http://127.0.0.1:${address.port}`;
       const headers = new Headers();
@@ -44,7 +59,12 @@ async function startLocalServer() {
         ...(body ? { body, duplex: "half" } : {})
       });
       const response = await clipFarmWorker.fetch(request, {});
-      outgoing.writeHead(response.status, Object.fromEntries(response.headers.entries()));
+      const responseHeaders = Object.fromEntries(response.headers.entries());
+      delete responseHeaders["access-control-allow-origin"];
+      delete responseHeaders["access-control-allow-headers"];
+      delete responseHeaders["access-control-allow-methods"];
+      responseHeaders["cache-control"] = "no-store";
+      outgoing.writeHead(response.status, responseHeaders);
       outgoing.end(Buffer.from(await response.arrayBuffer()));
     } catch (error) {
       if (!outgoing.headersSent) outgoing.writeHead(500, { "content-type": "application/json; charset=utf-8" });
@@ -74,7 +94,8 @@ function createMainWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      preload: join(here, "preload.cjs")
     }
   });
 
@@ -118,6 +139,13 @@ app.whenReady().then(async () => {
   try {
     await restoreYouTubeConnection();
     await startLocalServer();
+    ipcMain.handle("clip-farm:session", (event) => {
+      const senderUrl = event.senderFrame?.url || "";
+      if (!mainWindow || event.sender !== mainWindow.webContents || !(senderUrl === localOrigin || senderUrl.startsWith(localOrigin + "/"))) {
+        throw new Error("Session token is available only inside Clip Farm Studio.");
+      }
+      return sessionToken;
+    });
     installMenu();
     createMainWindow();
     app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); });

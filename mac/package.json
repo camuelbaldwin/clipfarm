@@ -1,6 +1,6 @@
 {
   "name": "clip-farm-studio-mac",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "type": "module",
   "description": "Clip Farm Studio desktop app for Intel and Apple Silicon Macs",
@@ -10,7 +10,8 @@
     "start": "npm run sync:worker && electron .",
     "pack:mac:x64": "npm run sync:worker && electron-builder --mac dmg --x64",
     "pack:mac:arm64": "npm run sync:worker && electron-builder --mac dmg --arm64",
-    "test:unlisted": "node scripts/verify-unlisted.mjs"
+    "test:unlisted": "node scripts/verify-unlisted.mjs",
+    "test:local-security": "node scripts/verify-local-security.mjs"
   },
   "devDependencies": {
     "electron": "32.3.3",
@@ -26,7 +27,9 @@
       "main.mjs",
       "worker.mjs",
       "package.json",
-      "youtube-upload.mjs"
+      "youtube-upload.mjs",
+      "preload.cjs",
+      "local-auth.mjs"
     ],
     "mac": {
       "category": "public.app-category.video",
