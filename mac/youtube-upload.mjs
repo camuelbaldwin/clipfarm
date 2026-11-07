@@ -50,6 +50,20 @@ async function verifyRevidVideo(pid,key){
  const url=endpointCheck(v.videoUrl||v.video_url||v.url||"");
  return url;
 }
+async function fetchVerifiedSource(first){
+ let url=first;
+ for(let n=0;n<5;n++){
+  endpointCheck(url);
+  const r=await fetch(url,{redirect:"manual"});
+  if([301,302,303,307,308].includes(r.status)){
+   const location=r.headers.get("location");if(!location)throw Error("Revid video download redirected without a destination.");
+   url=endpointCheck(new URL(location,url).href);
+   continue;
+  }
+  return r;
+ }
+ throw Error("Revid video download was redirected too many times.");
+}
 async function uploadUnlisted(input){
  const pid=String(input.pid||""),key=String(input.revidKey||"");
  const title=String(input.title||"").trim(),description=String(input.description||"").trim(),tags=Array.isArray(input.tags)?input.tags.map(String).map(x=>x.trim()).filter(Boolean):[];
@@ -60,7 +74,7 @@ async function uploadUnlisted(input){
  const token=await refreshToken();
  const folder=await mkdtemp(join(tmpdir(),"clipfarm-revid-"));const path=join(folder,"video.mp4");
  try{
-  const source=await fetch(videoUrl,{redirect:"follow"});
+  const source=await fetchVerifiedSource(videoUrl);
   if(!source.ok||!source.body)throw Error("Could not fetch finished Revid video: HTTP "+source.status);
   const mime=source.headers.get("content-type")||"video/mp4";
   if(!mime.startsWith("video/")&&!mime.startsWith("application/octet-stream")&&!mime.startsWith("application/mp4"))throw Error("Revid URL did not return a video file.");
