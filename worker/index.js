@@ -92,7 +92,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <h3 style="margin-top:0">First upload: Revid → YouTube Unlisted</h3>
 <p class="tiny">Test one finished Revid video with matched SEO. No manual MP4 download, copying tags or public publishing.</p>
 <div class="field"><label for="guidedVideo">1 · Choose a finished Revid video</label><select id="guidedVideo" class="input"><option value="">Refresh Revid videos to begin</option></select></div>
-<div class="actions"><button id="guidedRefreshRevid" class="btn ghost">Refresh Revid videos</button><button id="guidedGenerateSeo" class="btn ghost">2 · Generate SEO</button></div>
+<div class="actions"><button id="guidedRefreshRevid" class="btn ghost">Refresh Revid videos</button><button id="guidedCheckRevid" class="btn ghost">Check Revid video</button><button id="guidedGenerateSeo" class="btn ghost">2 · Generate SEO</button></div>
 <div class="field"><label>Preview video and matched YouTube metadata</label><div id="guidedPreview" class="tiny">Choose a finished video above.</div></div>
 <div class="actions"><button id="guidedEditSeo" class="btn ghost">Edit SEO</button><button id="guidedApprove" class="btn ghost">3 · Approve video + SEO</button></div>
 <div class="actions"><button id="guidedUploadUnlisted" class="btn primary">4 · Upload to YouTube Unlisted</button></div>
@@ -260,22 +260,23 @@ function guidedDraw(){
  const select=$("guidedVideo"),current=select.value,known=new Map();
  for(const p of existingProjects)if(p.pid)known.set(p.pid,{pid:p.pid,title:p.name,url:p.videoUrl});
  for(const j of batchJobs)if(j.pid){const p=known.get(j.pid)||{pid:j.pid,title:j.title,url:""};p.url=p.url||j.videoUrl;known.set(j.pid,p)}
- const ready=[...known.values()].filter(p=>!!p.url).sort((a,b)=>a.title.localeCompare(b.title));
- select.innerHTML='<option value="">Choose a completed Revid video…</option>'+ready.map(p=>'<option value="'+esc(p.pid)+'">'+esc(p.title)+' · '+esc(p.pid)+'</option>').join("");
+ const ready=[...known.values()].sort((a,b)=>a.title.localeCompare(b.title));
+ select.innerHTML='<option value="">Choose a Revid video…</option>'+ready.map(p=>'<option value="'+esc(p.pid)+'">'+esc(p.title)+(p.url?" · MP4 ready":" · check video")+' · '+esc(p.pid)+'</option>').join("");
  if(ready.some(p=>p.pid===current))select.value=current;
  const p=known.get(select.value),j=guidedProject();
  if(!p||!select.value){
-  $("guidedPreview").textContent=ready.length?"Choose one video from the list.":"Refresh your Revid library. Finished videos with an MP4 will appear here.";
+  $("guidedPreview").textContent=ready.length?"Choose one video from the list.":"Refresh your Revid library and check the selected project for its finished MP4.";
   $("guidedStatus").textContent=ready.length?"Select a finished video to begin.":"No finished Revid projects loaded yet.";
  }else{
   $("guidedPreview").innerHTML='<p><strong>'+esc(p.title)+'</strong> · Revid ID '+esc(p.pid)+'</p>'+
-   '<p><a href="'+esc(p.url)+'" target="_blank" rel="noreferrer">Preview finished video</a></p>'+
+   (p.url?'<p><a href="'+esc(p.url)+'" target="_blank" rel="noreferrer">Preview finished video</a></p>':'<p>MP4 link not loaded. Click Check Revid video to retrieve the export.</p>')+
    '<p><strong>YouTube title:</strong> '+esc(j?.seoTitle||"Generate SEO")+'</p>'+
    '<p><strong>Description:</strong> '+esc(j?.seoDescription||"Generate SEO")+'</p>'+
    '<p><strong>Keyword tags:</strong> '+esc((j?.tags||[]).join(", ")||"Generate SEO")+'</p>'+
    (j?.youtubeId?'<p><strong>Already uploaded:</strong> '+esc(j.youtubeVisibility||"unknown")+' · <a href="'+esc(j.youtubeUrl||"https://studio.youtube.com")+'" target="_blank" rel="noreferrer">View on YouTube</a></p>':'');
   $("guidedStatus").textContent=j?.youtubeId?"Already uploaded. Duplicate uploads are disabled.":j?.approved?"Approved; ready for Unlisted upload.":j?.seoTitle?"Review the video and SEO, then approve.":"Generate vidIQ/Gemini SEO for this video.";
  }
+ $("guidedCheckRevid").disabled=!p||!select.value;
  $("guidedGenerateSeo").disabled=!p||!select.value||!!j?.youtubeId||existingSeoBusy;
  $("guidedEditSeo").disabled=!j?.seoTitle||!!j?.youtubeId;
  $("guidedApprove").disabled=!j?.seoTitle||!j?.seoDescription||!!j?.youtubeId;
@@ -586,6 +587,19 @@ $("youtubeUploadAll").onclick=async()=>{
 };
 $("guidedVideo").onchange=guidedDraw;
 $("guidedRefreshRevid").onclick=()=> $("existingLoadProjects").onclick();
+$("guidedCheckRevid").onclick=async()=>{
+ const pid=$("guidedVideo").value,p=existingProjects.find(x=>x.pid===pid),j=guidedProject();
+ if(!pid)return alert("Select a Revid video first.");
+ const key=keys().revid;if(!key)return alert("Enter your Revid API key.");
+ $("guidedStatus").textContent="Checking Revid project "+pid+" for completed MP4…";
+ try{
+  const x=await api("/api/revid/status",{key,pid}),d=x.data||x,u=batchSafeUrl(d.videoUrl||d.video_url||d.url||"");
+  if(!u)throw Error("Revid has not returned a completed MP4 URL. Check that this project is rendered and exported in Revid.");
+  if(p)p.videoUrl=u;
+  if(j){j.videoUrl=u;j.status="Complete";batchPersist();batchDraw()}
+  guidedDraw();$("guidedStatus").textContent="Revid MP4 located. Preview the video, generate SEO and approve before uploading.";
+ }catch(e){$("guidedStatus").textContent="Revid video not ready: "+e.message;alert(e.message)}
+};
 $("guidedGenerateSeo").onclick=async()=>{
  const pid=$("guidedVideo").value,p=existingProjects.find(x=>x.pid===pid),j=guidedProject(),k=keys();
  if(!pid)return alert("Choose a finished Revid video.");
