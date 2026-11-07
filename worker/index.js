@@ -64,7 +64,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <h3 style="font-size:14px;margin-top:18px">New video drafts</h3><div class="videolist" id="pipelineDrafts"><span class="tiny">No drafts yet.</span></div>
 <section class="card" id="newRenderWorkspace"><h3>Send New Videos to Revid</h3>
 <p class="tiny">Import a batch or add your own script above, estimate credits, then confirm before creating new Revid videos.</p>
-<div id="newRenderControls"></div><div class="tiny" id="newRenderSummary"></div><div class="videolist" id="newBatchList"></div></section>
+<div id="newRenderControls"></div><div class="actions"><button class="btn ghost" id="newGenerateAllSeo">Generate SEO for all completed new Revid videos</button></div><div class="tiny" id="newSeoProgress" role="status" aria-live="polite"></div><div class="tiny" id="newRenderSummary"></div><div class="videolist" id="newBatchList"></div></section>
 </section>
 <section class="card tab-panel" id="batchPanel">
 <div class="cardhead"><div><h2>Publish Existing Revid Videos</h2><p>Load videos already created in Revid, add researched YouTube metadata, preview, approve, and publish.</p></div><div class="number">2</div></div>
@@ -254,7 +254,7 @@ function batchDraw(){
   '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
   '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
-  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> ')+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
+  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> '+(v.status==="Complete"&&v.pid?'<button class="btn small ghost" data-new-generate-seo="'+i+'">Generate SEO (vidIQ + Gemini)</button> ':''))+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
   (v.videoUrl&&v.pid&&v.seoTitle&&v.seoDescription?'<button class="btn small primary" data-unlisted-upload="'+i+'" '+(v.youtubeId||v.publishContentId?'disabled':'')+'>Upload Unlisted + SEO</button>':'')+
   (v.origin==="existing"?'<button class="btn small ghost" data-bdraft="'+i+'" '+(!v.seoTitle||!v.seoDescription?'disabled':'')+'>Save SEO for Later</button>':'')+
@@ -273,7 +273,8 @@ function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,nul
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh,tagCopy=e.target.dataset.btagsCopy,tagDone=e.target.dataset.btagsDone,draft=e.target.dataset.bdraft,unlisted=e.target.dataset.unlistedUpload;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh,tagCopy=e.target.dataset.btagsCopy,tagDone=e.target.dataset.btagsDone,draft=e.target.dataset.bdraft,unlisted=e.target.dataset.unlistedUpload,newSeo=e.target.dataset.newGenerateSeo;
+ if(newSeo!==undefined){await generateNewSeo(Number(newSeo));return}
  if(unlisted!==undefined){await uploadToYouTubeUnlisted(Number(unlisted));return}
  if(draft!==undefined){
   const j=batchJobs[Number(draft)];if(!j||j.origin!=="existing")return;
@@ -437,6 +438,33 @@ async function batchPublishStatus(index){
   alert(j.publishStatus==="Published"?"YouTube has confirmed the video is published.":j.publishStatus==="Failed"?j.error:"Still processing at Revid. Check again shortly.");
  }catch(e){alert("YouTube status check failed: "+e.message)}
 }
+let newSeoBusy=false;
+async function generateNewSeo(index,silent=false){
+ const j=batchJobs[index],k=keys();
+ if(!j||j.origin==="existing"||!j.pid||j.status!=="Complete")return alert("Render this new video in Revid before generating its SEO.");
+ if(j.youtubeId)return alert("This video is already uploaded. Edit its metadata in YouTube Studio.");
+ if(!k.vidiq||!k.gemini)return alert("Save your vidIQ and Gemini API keys first.");
+ if(newSeoBusy)return false;
+ newSeoBusy=true;
+ try{
+  $("newSeoProgress").textContent="Researching "+j.title+" with vidIQ and Gemini…";
+  const d=await api("/api/seo/project",{geminiKey:k.gemini,vidiqKey:k.vidiq,projectId:j.pid,projectTitle:j.title,projectText:j.script||j.prompt||""});
+  const r=seoVerify({format:"clipfarm-seo-v1",videos:[d]})[0];
+  j.seoTitle=r.title;j.seoDescription=r.description;j.primaryKeyword=r.primaryKeyword;j.tags=r.tags;j.research=r.research;
+  j.approved=false;j.tagsAppliedAt="";j.tagsCopiedAt="";batchPersist();batchDraw();
+  $("newSeoProgress").textContent="SEO ready for "+j.title+". Review and approve before Unlisted upload.";
+  return true;
+ }catch(err){$("newSeoProgress").textContent="SEO failed for "+j.title+": "+err.message;if(!silent)alert(err.message);return false}
+ finally{newSeoBusy=false}
+}
+$("newGenerateAllSeo").onclick=async()=>{
+ const rows=batchJobs.map((j,i)=>({j,i})).filter(({j})=>j.origin!=="existing"&&j.pid&&j.status==="Complete"&&!j.youtubeId);
+ if(!rows.length)return alert("No finished new Revid videos available for SEO generation.");
+ if(!confirm("Generate researched SEO for "+rows.length+" finished new Revid videos using vidIQ and Gemini? This uses API credits."))return;
+ let done=0;
+ for(const {i} of rows){if(await generateNewSeo(i,true))done++}
+ $("newSeoProgress").textContent="Generated SEO for "+done+" of "+rows.length+" videos. Review each before uploading to YouTube Unlisted.";
+};
 let youtubeConnected=false,youtubeUploadBusy=false;
 async function refreshDirectYoutube(){
  try{
