@@ -117,7 +117,13 @@ const say=x=>$("topStatus").textContent=x,esc=x=>String(x||"").replace(/[&<>"]/g
 function hist(){try{return JSON.parse(localStorage.getItem(STORE)||"[]")}catch(e){return[]}}
 function drawHistory(){let q=($("searchBox").value||"").toLowerCase(),a=hist().filter(x=>(x.topic+" "+x.source+" "+x.prompt).toLowerCase().includes(q));$("historyList").innerHTML=a.slice(0,30).map(x=>'<button class="btn ghost" data-id="'+esc(x.id)+'" style="width:100%;text-align:left;margin:3px 0">'+esc(x.topic||x.source||"Saved prompt")+'<small style="display:block;color:#a5a79c">'+new Date(x.date).toLocaleDateString()+' · '+esc((x.prompt||"").slice(0,60))+'</small></button>').join("")||'<span class="tiny">No saved prompts match.</span>';$("metaCount").textContent=hist().length}
 function save(x){let a=hist();a.unshift({...x,id:Date.now().toString(),date:new Date().toISOString()});localStorage.setItem(STORE,JSON.stringify(a.slice(0,100)));drawHistory()}
-async function api(p,d){let r=await fetch(p,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(d)}),j=await r.json().catch(()=>({error:"Unreadable response"}));if(!r.ok||j.error)throw Error(j.error||"Request failed");return j}
+async function localSessionHeaders(){
+ if(!window.clipFarmDesktop)return {};
+ const token=await window.clipFarmDesktop.getSessionToken();
+ if(!token)throw Error("Clip Farm local session is unavailable. Restart the desktop app.");
+ return {"x-clip-farm-session":token};
+}
+async function api(p,d){let r=await fetch(p,{method:"POST",headers:{"content-type":"application/json",...await localSessionHeaders()},body:JSON.stringify(d)}),j=await r.json().catch(()=>({error:"Unreadable response"}));if(!r.ok||j.error)throw Error(j.error||"Request failed");return j}
 function parse(s){
  s=String(s||"").trim();
  const fenced=s.match(/\x60\x60\x60(?:json)?\s*([\s\S]*?)\x60\x60\x60/i);if(fenced)s=fenced[1].trim();
@@ -157,7 +163,7 @@ async function analyze(){
   const analysisInstruction="Analyze the video; return JSON with summary, duration_seconds, hook, structure as timestamped beats, pacing, shot_and_cut_pattern, captions_and_text, audio, transitions, visual_style, ending, reusable_techniques array. Tie observations to timestamps. Describe transferable format mechanics without copying exact dialogue or distinctive scenes.";
   if(S.file){
    let f=new FormData();f.append("key",k.gemini);f.append("name",S.file.name);f.append("mimeType",S.file.type||"video/mp4");f.append("prompt",analysisInstruction);f.append("video",S.file);
-   let r=await fetch("/api/gemini/analyze",{method:"POST",body:f});p=await r.json();if(!r.ok||p.error)throw Error(p.error||"Video analysis failed");$("metaFile").textContent=S.file.name;
+   let r=await fetch("/api/gemini/analyze",{method:"POST",headers:await localSessionHeaders(),body:f});p=await r.json();if(!r.ok||p.error)throw Error(p.error||"Video analysis failed");$("metaFile").textContent=S.file.name;
   }else{
    let ytId=youtubeVideoId(mediaUrl);
    if(!directMedia(mediaUrl)&&!ytId){
@@ -794,7 +800,7 @@ $("savePromptBtn").onclick=()=>{let p=$("prompt").value.trim();if(!p)return aler
 drawHistory();
 </script></body></html>`;
 
-const corsHeaders={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"content-type,authorization"};
+const corsHeaders={"cache-control":"no-store"};
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8",...corsHeaders}});
 const youtubeIdFromUrl=raw=>{try{const u=new URL(raw),host=u.hostname.toLowerCase().replace(/^www\./,""),p=u.pathname;let id="";if(host==="youtu.be")id=p.split("/").filter(Boolean)[0]||"";else if(["youtube.com","m.youtube.com","music.youtube.com","youtube-nocookie.com"].includes(host)){if(p==="/watch")id=u.searchParams.get("v")||"";else{const m=p.match(/^\/(?:shorts|embed|live)\/([^/?]+)/);if(m)id=m[1]}}return /^[A-Za-z0-9_-]{11}$/.test(id)?id:""}catch{return""}};
 async function mcpCall(key,method,params={}){
@@ -872,7 +878,7 @@ function geminiText(x){if(x==null)return"";if(typeof x==="string")return x;if(Ar
 function parseGeminiJson(raw){let s=String(raw||"").trim(),f=s.match(/```(?:json)?\s*([\s\S]*?)```/i);if(f)s=f[1].trim();try{return JSON.parse(s)}catch{}for(let a=0;a<s.length;a++){if(s[a]!=="{"&&s[a]!=="[")continue;let stack=[],quoted=false,escape=false;for(let i=a;i<s.length;i++){const c=s[i];if(quoted){if(escape)escape=false;else if(c==="\\")escape=true;else if(c==='"')quoted=false;continue}if(c==='"'){quoted=true;continue}if(c==="{"||c==="[")stack.push(c);else if(c==="}"||c==="]"){const open=stack.pop();if((open==="{"&&c!=="}")||(open==="["&&c!=="]"))break;if(!stack.length){try{return JSON.parse(s.slice(a,i+1))}catch{break}}}}}throw new Error("No valid JSON object found")}
 async function geminiStructured(key,input,schema){const decode=response=>{const value=parseGeminiJson(geminiText(response));if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Expected a JSON object");for(const field of schema.required||[])if(!(field in value))throw new Error("Missing required field: "+field);return value};const first=await geminiGenerate(key,input,schema);try{return decode(first)}catch{const raw=geminiText(first).slice(0,15000);const retry=await geminiGenerate(key,[{type:"text",text:"Return one valid JSON object that follows the response schema. Convert the supplied response into the requested fields without adding commentary. If a field is missing, infer a concise value from the supplied response.\n\nResponse to convert:\n"+raw}],schema);try{return decode(retry)}catch{throw new Error("Gemini returned a response, but it could not be converted to the required JSON format. Check the video is accessible, then retry. "+(raw?"Response excerpt: "+raw.slice(0,140):"No text output was returned."))}}}
 export default {async fetch(request){
- const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
+ const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{status:403,headers:corsHeaders});
  if(request.method==="GET"&&url.pathname==="/")return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});
  try{
   if(request.method==="POST"&&url.pathname==="/api/vidiq/research"){
