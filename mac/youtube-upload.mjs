@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from "node:crypto";
 import { createWriteStream, createReadStream } from "node:fs";
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm, stat, readFile, writeFile, unlink } from "node:fs/promises";
+import { app, safeStorage } from "electron";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -8,6 +9,21 @@ import { pipeline } from "node:stream/promises";
 
 let connection=null, pending=null, inProgress=false;
 const endpoint="http://127.0.0.1:43129/api/youtube/callback";
+const credentialFile=()=>join(app.getPath("userData"),"youtube-connection.bin");
+async function rememberConnection(){
+ if(!safeStorage.isEncryptionAvailable())return false;
+ const encrypted=safeStorage.encryptString(JSON.stringify({clientId:connection.clientId,clientSecret:connection.clientSecret,refreshToken:connection.refreshToken,channelId:connection.channelId,channelTitle:connection.channelTitle}));
+ await writeFile(credentialFile(),encrypted,{mode:0o600});return true;
+}
+export async function restoreYouTubeConnection(){
+ try{
+  if(!safeStorage.isEncryptionAvailable())return;
+  const encrypted=await readFile(credentialFile());
+  const saved=JSON.parse(safeStorage.decryptString(encrypted));
+  if(!saved.clientId||!saved.refreshToken)return;
+  connection={...saved,accessToken:"",expireAt:0};
+ }catch{return}
+}
 const json=(res,code,body)=>{res.writeHead(code,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});res.end(JSON.stringify(body))};
 const err=e=>String(e?.message||e).slice(0,650);
 const textBody=async req=>{let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>25000)throw Error("Request too large");chunks.push(chunk)}return JSON.parse(Buffer.concat(chunks).toString("utf8"))};
@@ -90,6 +106,7 @@ export async function handleYouTube(req,res,url){
    const channelData=await channelRes.json(),channel=channelData.items?.[0];
    if(!channel?.id){connection=null;throw Error("No YouTube channel is associated with the Google account selected.")}
    connection.channelId=channel.id;connection.channelTitle=channel.snippet?.title||channel.id;
+   await rememberConnection();
    res.writeHead(200,{"content-type":"text/html; charset=utf-8"});res.end("<!doctype html><title>Clip Farm YouTube connected</title><h2>YouTube connected to Clip Farm.</h2><p>Return to Clip Farm Studio. You may close this tab.</p>");
   }catch(e){res.writeHead(400,{"content-type":"text/plain; charset=utf-8"});res.end("YouTube connection failed: "+err(e))}
   return true;
@@ -98,7 +115,7 @@ export async function handleYouTube(req,res,url){
  if(origin!=="http://127.0.0.1:43129"){json(res,403,{error:"This operation is only allowed from the local Clip Farm Mac app."});return true}
  try{
   if(url.pathname==="/api/youtube/status"&&req.method==="POST"){json(res,200,{connected:!!connection,channelId:connection?.channelId||"",channelTitle:connection?.channelTitle||"",uploading:inProgress,mode:"desktop-unlisted"});return true}
-  if(url.pathname==="/api/youtube/disconnect"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");connection=null;json(res,200,{connected:false});return true}
+  if(url.pathname==="/api/youtube/disconnect"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");connection=null;await unlink(credentialFile()).catch(()=>{});json(res,200,{connected:false});return true}
   if(url.pathname==="/api/youtube/connect"&&req.method==="POST"){
    const input=await textBody(req),clientId=String(input.clientId||""),clientSecret=String(input.clientSecret||"");
    if(!clientId.endsWith(".apps.googleusercontent.com"))throw Error("Enter your Google OAuth Desktop client ID.");
