@@ -24,7 +24,8 @@
     "files": [
       "main.mjs",
       "worker.mjs",
-      "package.json"
+      "package.json",
+      "youtube-upload.mjs"
     ],
     "mac": {
       "category": "public.app-category.video",
@@ -32,15 +33,25 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "identity": null
     },
     "dmg": {
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   }
