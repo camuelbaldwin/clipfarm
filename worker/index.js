@@ -425,10 +425,11 @@ $("existingLoadProjects").onclick=async()=>{
  const b=$("existingLoadProjects");b.disabled=true;$("existingStatus").textContent="Loading existing projects from your Revid account…";
  try{const result=await api("/api/revid/projects",{key});const selectedIds=new Set(existingProjects.filter(p=>p.selected).map(p=>p.pid));
  const newlyLoaded=existingProjectsNormalize(result);
+ const mayBePartial=newlyLoaded.length>=100;
  const known=new Map(existingProjects.map(p=>[p.pid,p]));
  for(const p of newlyLoaded){p.selected=selectedIds.has(p.pid);known.set(p.pid,p)}
  existingProjects=[...known.values()];
- existingDrawProjects();$("existingStatus").textContent=newlyLoaded.length+" projects returned by Revid. Your previous selections and SEO remain available. Select any videos for the next batch.";}
+ existingDrawProjects();$("existingStatus").textContent=newlyLoaded.length+" projects returned by Revid"+(mayBePartial?" (the current Revid API request may be capped at 100; additional Revid account pagination has not been verified)":"")+". Your selections and SEO are preserved. Pick any future batch.";}
  catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
  finally{b.disabled=false}
 };
