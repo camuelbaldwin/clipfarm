@@ -31,6 +31,9 @@ jobs:
           node --check worker.mjs
           node --check main.mjs
           node --check youtube-upload.mjs
+          node --check local-auth.mjs
+          node --check preload.cjs
+          npm run test:local-security
           npm run test:unlisted
       - name: Package Intel Mac app
         working-directory: mac
