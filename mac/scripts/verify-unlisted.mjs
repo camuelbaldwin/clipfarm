@@ -26,4 +26,9 @@ assert(worker.includes('if(/429|rate.limit|too.many.requests/i.test(j.error))bat
 assert(worker.includes('batchJobs.some(other=>other!==j&&other.pid===j.pid'),"Prevent double uploads for same Revid project ID");
 assert(worker.includes('if($("youtubeVisibility").value!=="public")'),"Revid Public publishing must remain explicitly gated");
 assert(worker.includes('if(!skipConfirmation&&!confirm('),"Batch Unlisted uploads should not prompt every video");
+for(const id of ["guidedVideo","guidedRefreshRevid","guidedCheckRevid","guidedGenerateSeo","guidedPreview","guidedEditSeo","guidedApprove","guidedUploadUnlisted","guidedStatus"]){assert(worker.includes('id="'+id+'"'),"Missing guided upload control: "+id)}
+assert(worker.includes('await uploadToYouTubeUnlisted(batchJobs.indexOf(j))'),"Guided upload must use the real YouTube Unlisted uploader");
+assert(worker.includes('await api("/api/revid/status",{key,pid})'),"Guided test must check the Revid video output");
+assert(worker.includes("j.approved=true;batchPersist();batchDraw();"),"Explicit user approval required before guided upload");
+assert(worker.includes('j.youtubeId&&j.youtubeVisibility==="unlisted"'),"Only show test upload success after confirmed Unlisted result");
 console.log("Clip Farm unlisted pipeline static checks passed.");
