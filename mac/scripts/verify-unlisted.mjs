@@ -20,6 +20,9 @@ assert(upload.includes('videos?part=status&id='),"Verify actual YouTube privacy 
 assert(worker.includes('data-unlisted-upload='),"Existing/new jobs need direct upload action");
 assert(worker.includes('id="youtubeUploadAll"'),"Need bulk uploads without manual individual uploads");
 assert(worker.includes('id="newGenerateAllSeo"'),"Need SEO generation for new Revid renders");
+assert(worker.includes('<option value="10" selected>'),"Ten simultaneous render jobs should be the default choice");
+assert(worker.includes('Math.min(10,Math.max(1,Number($("batchConcurrency").value)||1))'),"Renderer must permit ten concurrent jobs");
+assert(worker.includes('if(/429|rate.limit|too.many.requests/i.test(j.error))batchStop=true;'),"Pause new Revid submissions on rate limits");
 assert(worker.includes('batchJobs.some(other=>other!==j&&other.pid===j.pid'),"Prevent double uploads for same Revid project ID");
 assert(worker.includes('if($("youtubeVisibility").value!=="public")'),"Revid Public publishing must remain explicitly gated");
 assert(worker.includes('if(!skipConfirmation&&!confirm('),"Batch Unlisted uploads should not prompt every video");
