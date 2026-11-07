@@ -177,7 +177,33 @@ try{let t=$("visualType").value,m=t==="anime"?{type:"ai-video",videoModel:"pro",
 async function poll(){if(!S.pid)return;try{let x=await api("/api/revid/status",{key:keys().revid,pid:S.pid}),d=x.data||x,st=d.status||d.state||"rendering",u=d.videoUrl||d.video_url||d.url;$("renderStatus").textContent="Render "+S.pid+" · "+st;if(u){$("draftVideo").src=u;$("draftVideo").style.display="block";$("openDraft").href=u;$("openDraft").style.display="inline-block";say("Draft ready")}else if(st!=="failed")setTimeout(poll,9000)}catch(e){$("renderStatus").textContent=e.message}}
 $("refreshBtn").onclick=poll;
 
-/* Batch Production: separate jobs; no automatic publishing; no secret keys in exports. */
+/* Two queues: new Revid render jobs and existing Revid projects with SEO. */
+
+function arrangeNewVideoControls(){
+ const host=$("newRenderControls");
+ const move=(id,selector)=>{const node=$(id)?.closest(selector);if(!node)throw Error("Missing new video control "+id);host.appendChild(node)};
+ move("batchTemplate",".actions");
+ move("batchFile",".field");
+ move("batchJson",".field");
+ move("batchMode",".field");
+ move("batchStyle",".row");
+ move("batchConcurrency",".field");
+ move("batchImport",".actions");
+ host.appendChild($("batchSummary"));
+ $("newRenderSummary").textContent="Only new video jobs appear here. Existing Revid projects are not rendered again.";
+}
+arrangeNewVideoControls();
+$("newAddVideo").onclick=()=>{
+ if(batchRunning)return alert("Finish active Revid rendering before adding another video.");
+ const title=$("newVideoTitle").value.trim(),script=$("newVideoScript").value.trim(),promptText=$("newVideoPrompt").value.trim();
+ if(!title||!script)return alert("Give the new video a title and narration script.");
+ const item=batchRead([{title,script,prompt:promptText,seo:{title,description:"",primaryKeyword:"",tags:[]}}])[0];
+ item.origin="new";item.selected=true;batchJobs.push(item);batchInvalidate();
+ $("newVideoTitle").value="";$("newVideoScript").value="";$("newVideoPrompt").value="";
+ say("Added new video to Revid rendering queue. Estimate credits before submitting.");
+ $("newRenderWorkspace").scrollIntoView({behavior:"smooth"});
+};
+
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[],existingSeoBusy=false;
 const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
@@ -202,7 +228,7 @@ function batchRead(input){
 function batchMedia(){let t=$("batchStyle").value;return t==="anime"?{type:"ai-video",videoModel:"pro",mediaPreset:"ANIME"}:t==="motion-graphics"?{type:"motion-graphics",videoModel:"pro",mediaPreset:"MOTION_INSPIRATION_DARK_SAAS"}:t==="stock-video"?{type:"stock-video"}:{type:"ai-video",videoModel:"pro"}}
 function batchPayload(v){const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40};return {workflow:mode,source,aspectRatio:"9:16",media:batchMedia(),voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
 function batchDraw(){
- const active=batchJobs.filter(j=>j.origin!=="existing"&&j.selected),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
+ const active=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
  $("batchStart").disabled=batchRunning||!active.length||!batchEstimated||active.some(j=>j.credits===null||j.status!=="Ready");
  $("batchStop").disabled=!batchRunning;
  $("batchSummary").textContent=batchJobs.filter(j=>j.origin!=="existing").length+" new video jobs · "+active.length+" selected · "+batchJobs.filter(j=>j.origin!=="existing"&&j.status==="Complete").length+" rendered · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
@@ -210,11 +236,11 @@ function batchDraw(){
   const tags=Array.isArray(v.tags)?v.tags:[],published=["Submitted","Published","Processing"].includes(v.publishStatus);
   return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div>'+
   '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
-  '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · Publish: '+esc(v.publishStatus||"Not submitted")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
+  '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
   '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
-  (v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
+  (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
   '</div>';
  });
@@ -242,11 +268,13 @@ $("batchList").onclick=async e=>{
   j.seoTitle=title.trim().slice(0,100);j.seoDescription=description.slice(0,5000);j.primaryKeyword=keyword.trim();
   j.tags=tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,50);batchPersist();batchDraw();return;
  }
- if(i===undefined)return;const j=batchJobs[+i];if(batchRunning)return alert("Stop the batch before editing.");
+ if(i===undefined)return;const j=batchJobs[+i];if(j.origin==="existing")return alert("Existing Revid videos are already rendered. Edit SEO instead of the narration.");if(batchRunning)return alert("Stop the batch before editing.");
  const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");
  j.script=next;j.status="Ready";j.pid="";j.videoUrl="";j.approved=false;j.publishStatus="";j.youtubeUrl="";batchInvalidate();
 };
 
+$("newBatchList").onchange=e=>$("batchList").onchange(e);
+$("newBatchList").onclick=e=>$("batchList").onclick(e);
 function existingProjectsNormalize(raw){
  const root=raw?.data??raw;
  const candidates=Array.isArray(root)?root:(root?.projects||root?.items||root?.results||root?.data?.projects||root?.data?.items||[]);
@@ -372,7 +400,7 @@ async function batchPublishStatus(index){
 }
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
- if(!j||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Video must finish rendering first.");
+ if(!j||j.origin!=="existing"||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Match a completed existing Revid video with its SEO before publishing from this screen.");
  if(!j.approved)return alert("Review and approve the video first.");
  if(!sel.value)return alert("Choose a connected YouTube account.");
  if(j.publishStatus==="Submitted"||j.publishStatus==="Submitting")return alert("Already submitted. Check Revid for status.");
@@ -391,7 +419,7 @@ async function publishBatchVideo(index){
  batchPersist();batchDraw();
 }
 $("batchMode").onchange=batchInvalidate;$("batchStyle").onchange=batchInvalidate;$("batchResolution").onchange=batchInvalidate;
-$("batchEstimate").onclick=async()=>{if(batchRunning)return;if(!batchJobs.some(j=>j.selected))return alert("Select at least one video.");const b=$("batchEstimate");b.disabled=true;try{for(let i=0;i<batchJobs.length;i++){const j=batchJobs[i];if(j.origin==="existing"||!j.selected||["Complete","Rendering"].includes(j.status))continue;$("batchSummary").textContent="Estimating "+(i+1)+"/"+batchJobs.length+": "+j.title;const x=await api("/api/revid/estimate",{payload:batchPayload(j)});let n=Number(x.creditsToConsume??x.credits??x.estimatedCredits??x.cost);if(!Number.isFinite(n))throw Error("Revid returned no usable credit estimate for "+j.title);j.credits=n+10}batchEstimated=true;batchPersist();batchDraw()}catch(e){batchEstimated=false;batchDraw();alert("Estimation stopped: "+e.message)}finally{b.disabled=false}};
+$("batchEstimate").onclick=async()=>{if(batchRunning)return;if(!batchJobs.some(j=>j.origin!=="existing"&&j.selected))return alert("Select at least one new video.");const b=$("batchEstimate");b.disabled=true;try{for(let i=0;i<batchJobs.length;i++){const j=batchJobs[i];if(j.origin==="existing"||!j.selected||["Complete","Rendering"].includes(j.status))continue;$("batchSummary").textContent="Estimating "+(i+1)+"/"+batchJobs.length+": "+j.title;const x=await api("/api/revid/estimate",{payload:batchPayload(j)});let n=Number(x.creditsToConsume??x.credits??x.estimatedCredits??x.cost);if(!Number.isFinite(n))throw Error("Revid returned no usable credit estimate for "+j.title);j.credits=n+10}batchEstimated=true;batchPersist();batchDraw()}catch(e){batchEstimated=false;batchDraw();alert("Estimation stopped: "+e.message)}finally{b.disabled=false}};
 $("batchStop").onclick=()=>{batchStop=true;say("No new renders will start; active Revid jobs continue and Clip Farm will keep checking them")};
 async function batchStatus(j){
  for(let attempts=0;attempts<240;attempts++){
@@ -486,7 +514,7 @@ $("pipelineQueue").onclick=()=>{
  if(batchJobs.some(v=>["Rendering","Submitting"].includes(v.status)))return alert("Current Revid renders are still active. Finish those before replacing the queue.");
  if(batchJobs.some(j=>j.origin!=="existing"&&!["Rendering","Submitting"].includes(j.status))&&!confirm("Replace new video drafts? Existing Revid SEO will be preserved."))return;
  const drafts=batchRead(selected.map(v=>({...v,origin:"new",research:v.research||null,seo:{title:v.seoTitle||v.seo?.title||v.title,description:v.seoDescription||v.seo?.description||"",primaryKeyword:v.primaryKeyword||v.seo?.primaryKeyword||"",tags:v.tags||v.seo?.tags||[]}})));batchJobs=[...batchJobs.filter(j=>j.origin==="existing"||["Rendering","Submitting"].includes(j.status)),...drafts];
- batchInvalidate();showTab("batch");say("Research drafts transferred to Batch Production. Estimate credits before rendering.");
+ batchInvalidate();say("New scripts moved to Revid creation queue. Estimate credits before rendering.");$("newRenderWorkspace").scrollIntoView({behavior:"smooth"});
 };
 try{const d=JSON.parse(localStorage.getItem(PIPELINE_STORE)||"null");if(d&&typeof d==="object"){pipelineRefs=Array.isArray(d.refs)?d.refs:[];pipelineKeywords=Array.isArray(d.keywords)?d.keywords:[];pipelineDrafts=Array.isArray(d.drafts)?d.drafts:[];if(d.topic)$("pipelineTopic").value=d.topic;if(d.direction)$("pipelineDirection").value=d.direction}}catch(e){}
 pipelineDraw();
