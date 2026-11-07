@@ -1,6 +1,6 @@
 {
   "name": "clip-farm-studio-mac",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Clip Farm Studio desktop app for Intel and Apple Silicon Macs",
