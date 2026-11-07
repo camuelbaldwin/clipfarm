@@ -442,7 +442,7 @@ async function refreshDirectYoutube(){
  try{
   const d=await api("/api/youtube/status",{});
   youtubeConnected=!!d.connected;
-  $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected for direct Unlisted uploads.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
+  $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected: "+(d.channelTitle||d.channelId||"Unknown channel")+" · Unlisted uploads enabled.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
   $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
  }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
  return youtubeConnected;
@@ -474,15 +474,16 @@ async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
  $("youtubeUploadAll").disabled=true;
  try{
   const result=await api("/api/youtube/upload-unlisted",{pid:j.pid,revidKey:keys().revid,title:j.seoTitle,description:j.seoDescription,tags:j.tags,visibility:"unlisted"});
-  if(!result.youtubeId||result.visibility!=="unlisted")throw Error("YouTube did not confirm Unlisted visibility. Check YouTube Studio before retrying.");
-  for(const rec of batchJobs.filter(x=>x.pid===j.pid)){rec.youtubeId=result.youtubeId;rec.youtubeUrl=result.youtubeUrl;rec.youtubeVisibility=result.visibility;rec.publishStatus="Unlisted";rec.tagsAppliedAt=new Date().toISOString();rec.error=""}
-  batchPersist();batchDraw();progress.textContent="Uploaded as Unlisted: "+j.seoTitle;
-  say("YouTube Unlisted upload confirmed");
+  if(!result.youtubeId)throw Error("YouTube did not return a video ID; check Studio before retrying.");
+  for(const rec of batchJobs.filter(x=>x.pid===j.pid)){rec.youtubeId=result.youtubeId;rec.youtubeUrl=result.youtubeUrl;rec.youtubeVisibility=result.visibility;rec.publishStatus=result.visibility==="unlisted"?"Unlisted":"Visibility review";rec.tagsAppliedAt=new Date().toISOString();rec.error=result.visibility==="unlisted"?"":"Actual YouTube visibility: "+result.visibility}
+  batchPersist();batchDraw();
+  if(result.visibility!=="unlisted"){progress.textContent="Uploaded, but YouTube visibility is "+result.visibility+". Review in YouTube Studio.";alert("The video uploaded successfully, but YouTube reports "+result.visibility+" visibility. Its YouTube ID is saved so it cannot be uploaded twice by mistake.");}
+  else{progress.textContent="Uploaded as Unlisted: "+j.seoTitle;say("YouTube Unlisted upload confirmed");}
  }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
  finally{youtubeUploadBusy=false;await refreshDirectYoutube()}
 }
 $("youtubeUploadAll").onclick=async()=>{
- const eligible=batchJobs.map((j,i)=>({...j,index:i})).filter(j=>j.pid&&j.videoUrl&&j.status==="Complete"&&j.approved&&j.seoTitle&&j.seoDescription&&!j.youtubeId&&!j.publishContentId);
+ const seen=new Set();const eligible=batchJobs.map((j,i)=>({...j,index:i})).filter(j=>{if(!j.pid||seen.has(j.pid))return false;seen.add(j.pid);return j.videoUrl&&j.status==="Complete"&&j.approved&&j.seoTitle&&j.seoDescription&&!j.youtubeId&&!j.publishContentId});
  if(!eligible.length)return alert("No approved, SEO-ready finished Revid videos to upload.");
  if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
  if(!confirm("Start "+eligible.length+" individual UNLISTED YouTube uploads? Each is a separate upload. No videos will be public."))return;
