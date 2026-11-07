@@ -88,6 +88,16 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
 <section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Authorize your YouTube account once; your Mac securely saves the connection. Enable YouTube Data API, create an OAuth Desktop client, and approve upload permissions in your browser.</p><p class="tiny"><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Enable YouTube Data API</a> · <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Create OAuth Desktop client</a> · If your OAuth consent screen is in Testing, add your Google account as a test user.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div></section>
+<section class="card" style="margin:16px 0;background:#201a2b;border:1px solid #78628e">
+<h3 style="margin-top:0">First upload: Revid → YouTube Unlisted</h3>
+<p class="tiny">Test one finished Revid video with matched SEO. No manual MP4 download, copying tags or public publishing.</p>
+<div class="field"><label for="guidedVideo">1 · Choose a finished Revid video</label><select id="guidedVideo" class="input"><option value="">Refresh Revid videos to begin</option></select></div>
+<div class="actions"><button id="guidedRefreshRevid" class="btn ghost">Refresh Revid videos</button><button id="guidedGenerateSeo" class="btn ghost">2 · Generate SEO</button></div>
+<div class="field"><label>Preview video and matched YouTube metadata</label><div id="guidedPreview" class="tiny">Choose a finished video above.</div></div>
+<div class="actions"><button id="guidedEditSeo" class="btn ghost">Edit SEO</button><button id="guidedApprove" class="btn ghost">3 · Approve video + SEO</button></div>
+<div class="actions"><button id="guidedUploadUnlisted" class="btn primary">4 · Upload to YouTube Unlisted</button></div>
+<div id="guidedStatus" class="tiny" role="status" aria-live="polite">Choose one video to test the connection.</div>
+</section>
 <div class="field"><label for="youtubeVisibility">YouTube visibility when uploading</label><select id="youtubeVisibility" class="input"><option value="unlisted" selected>Unlisted — only people with the link can watch</option><option value="public">Public — visible to everyone (advanced)</option></select><small>Unlisted is the default for the direct YouTube upload. Public posting through Revid remains a separate advanced option.</small></div>
 <div class="actions"><button class="btn primary" id="youtubeUploadAll">Upload all approved SEO-ready videos as Unlisted</button><button class="btn ghost" id="openUnlistedStudio">Open YouTube Studio</button></div><div id="youtubeUploadProgress" class="tiny" role="status" aria-live="polite">No upload in progress.</div>
 <details style="margin:16px 0;border:1px solid #68547b;padding:12px;border-radius:10px"><summary style="cursor:pointer;font-weight:700">Advanced: public publishing through Revid (separate from Unlisted)</summary>
@@ -241,6 +251,37 @@ function youtubeTagsText(tags){return [...new Set((Array.isArray(tags)?tags:[]).
 function youtubeTagsLength(tags){return (Array.isArray(tags)?tags:[]).reduce((sum,tag,i)=>sum+String(tag).length+(String(tag).includes(" ")?2:0)+(i?1:0),0)}
 function youtubeStudioLink(j){const match=String(j.youtubeUrl||"").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);return match?"https://studio.youtube.com/video/"+match[1]+"/edit":"https://studio.youtube.com"}
 function seoVideoLabel(j){return (j.seoTitle||j.title||"Untitled")+" · Revid ID "+(j.pid||"unassigned")}
+function guidedProject(){
+ const id=$("guidedVideo")?.value;
+ return id?(batchJobs.find(j=>j.pid===id&&j.origin==="existing")||batchJobs.find(j=>j.pid===id)||null):null;
+}
+function guidedDraw(){
+ if(!$("guidedVideo"))return;
+ const select=$("guidedVideo"),current=select.value,known=new Map();
+ for(const p of existingProjects)if(p.pid)known.set(p.pid,{pid:p.pid,title:p.name,url:p.videoUrl});
+ for(const j of batchJobs)if(j.pid){const p=known.get(j.pid)||{pid:j.pid,title:j.title,url:""};p.url=p.url||j.videoUrl;known.set(j.pid,p)}
+ const ready=[...known.values()].filter(p=>!!p.url).sort((a,b)=>a.title.localeCompare(b.title));
+ select.innerHTML='<option value="">Choose a completed Revid video…</option>'+ready.map(p=>'<option value="'+esc(p.pid)+'">'+esc(p.title)+' · '+esc(p.pid)+'</option>').join("");
+ if(ready.some(p=>p.pid===current))select.value=current;
+ const p=known.get(select.value),j=guidedProject();
+ if(!p||!select.value){
+  $("guidedPreview").textContent=ready.length?"Choose one video from the list.":"Refresh your Revid library. Finished videos with an MP4 will appear here.";
+  $("guidedStatus").textContent=ready.length?"Select a finished video to begin.":"No finished Revid projects loaded yet.";
+ }else{
+  $("guidedPreview").innerHTML='<p><strong>'+esc(p.title)+'</strong> · Revid ID '+esc(p.pid)+'</p>'+
+   '<p><a href="'+esc(p.url)+'" target="_blank" rel="noreferrer">Preview finished video</a></p>'+
+   '<p><strong>YouTube title:</strong> '+esc(j?.seoTitle||"Generate SEO")+'</p>'+
+   '<p><strong>Description:</strong> '+esc(j?.seoDescription||"Generate SEO")+'</p>'+
+   '<p><strong>Keyword tags:</strong> '+esc((j?.tags||[]).join(", ")||"Generate SEO")+'</p>'+
+   (j?.youtubeId?'<p><strong>Already uploaded:</strong> '+esc(j.youtubeVisibility||"unknown")+' · <a href="'+esc(j.youtubeUrl||"https://studio.youtube.com")+'" target="_blank" rel="noreferrer">View on YouTube</a></p>':'');
+  $("guidedStatus").textContent=j?.youtubeId?"Already uploaded. Duplicate uploads are disabled.":j?.approved?"Approved; ready for Unlisted upload.":j?.seoTitle?"Review the video and SEO, then approve.":"Generate vidIQ/Gemini SEO for this video.";
+ }
+ $("guidedGenerateSeo").disabled=!p||!select.value||!!j?.youtubeId||existingSeoBusy;
+ $("guidedEditSeo").disabled=!j?.seoTitle||!!j?.youtubeId;
+ $("guidedApprove").disabled=!j?.seoTitle||!j?.seoDescription||!!j?.youtubeId;
+ $("guidedApprove").textContent=j?.approved?"3 · Approved":"3 · Approve video + SEO";
+ $("guidedUploadUnlisted").disabled=!j?.approved||!j?.seoTitle||!j?.videoUrl||!!j?.youtubeId||!youtubeConnected||youtubeUploadBusy;
+}
 function batchDraw(){
  const active=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
  $("batchStart").disabled=batchRunning||!active.length||!batchEstimated||active.some(j=>j.credits===null||j.status!=="Ready");
@@ -271,6 +312,7 @@ function batchDraw(){
  });
  $("batchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin==="existing").join("")||'<span class="tiny">No SEO-ready Revid videos yet. Load projects and create SEO above.</span>';
  $("newBatchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin!=="existing").join("")||'<span class="tiny">No new videos queued yet.</span>';
+ guidedDraw();
 }
 function batchInvalidate(){batchEstimated=false;for(const j of batchJobs)if(!["Complete","Rendering"].includes(j.status))j.credits=null;batchPersist();batchDraw()}
 $("batchFile").onchange=async e=>{try{$("batchJson").value=await e.target.files[0].text()}catch(err){alert(err.message)}};
@@ -351,6 +393,7 @@ function existingDrawProjects(){
    (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
    (j?.seoTitle?'<p class="tiny">YouTube title: '+esc(j.seoTitle)+'</p>':'')+'</div>';
  }).join("")||'<span class="tiny">No videos match the current filter.</span>';
+ guidedDraw();
 }
 $("existingProjectFilter").oninput=existingDrawProjects;
 $("existingSelectionFilter").onchange=existingDrawProjects;
