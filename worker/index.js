@@ -206,7 +206,7 @@ $("newAddVideo").onclick=()=>{
 
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[],existingSeoBusy=false;
-const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null};
+const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null,tagsCopiedAt:"",tagsAppliedAt:""};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
 function batchRead(input){
@@ -227,13 +227,26 @@ function batchRead(input){
 }
 function batchMedia(){let t=$("batchStyle").value;return t==="anime"?{type:"ai-video",videoModel:"pro",mediaPreset:"ANIME"}:t==="motion-graphics"?{type:"motion-graphics",videoModel:"pro",mediaPreset:"MOTION_INSPIRATION_DARK_SAAS"}:t==="stock-video"?{type:"stock-video"}:{type:"ai-video",videoModel:"pro"}}
 function batchPayload(v){const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40};return {workflow:mode,source,aspectRatio:"9:16",media:batchMedia(),voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
+function youtubeTagsText(tags){return [...new Set((Array.isArray(tags)?tags:[]).map(x=>String(x).trim().replace(/^#+/,"")).filter(Boolean))].join(", ")}
+function youtubeTagsLength(tags){return (Array.isArray(tags)?tags:[]).reduce((sum,tag,i)=>sum+String(tag).length+(String(tag).includes(" ")?2:0)+(i?1:0),0)}
+function youtubeStudioLink(j){const match=String(j.youtubeUrl||"").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);return match?"https://studio.youtube.com/video/"+match[1]+"/edit":"https://studio.youtube.com"}
+function seoVideoLabel(j){return (j.seoTitle||j.title||"Untitled")+" · Revid ID "+(j.pid||"unassigned")}
 function batchDraw(){
  const active=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),total=active.reduce((n,j)=>n+(Number(j.credits)||0),0);
  $("batchStart").disabled=batchRunning||!active.length||!batchEstimated||active.some(j=>j.credits===null||j.status!=="Ready");
  $("batchStop").disabled=!batchRunning;
  $("batchSummary").textContent=batchJobs.filter(j=>j.origin!=="existing").length+" new video jobs · "+active.length+" selected · "+batchJobs.filter(j=>j.origin!=="existing"&&j.status==="Complete").length+" rendered · "+(batchEstimated?"Selected estimated credits: "+total:"Estimate credits before rendering")+(batchRunning?" · "+batchJobs.filter(j=>["Submitting","Rendering"].includes(j.status)).length+" active":"");
  const cards=batchJobs.map((v,i)=>{
-  const tags=Array.isArray(v.tags)?v.tags:[],published=["Submitted","Published","Processing"].includes(v.publishStatus);
+  const tags=Array.isArray(v.tags)?v.tags:[],published=["Submitted","Published","Processing"].includes(v.publishStatus),tagText=youtubeTagsText(tags),tagsLong=youtubeTagsLength(tags)>500;
+  const tagPanel=v.origin==="existing"?'<div class="field" style="background:#15121c;border:1px solid #55466a;border-radius:10px;padding:12px;margin-top:12px">'+
+   '<strong style="display:block;font-size:12px">YouTube keyword tags · this video only</strong>'+
+   '<p class="tiny">Revid project ID: '+esc(v.pid||"Missing")+' · SEO source: '+esc(v.research?.source||"Manual / imported")+'</p>'+
+   '<div class="tiny" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0;color:#f4f0ff">'+esc(tagText||"No tags yet. Create SEO or edit SEO for this video.")+'</div>'+
+   (tagsLong?'<p class="tiny" style="color:#ffc2a0">Tags exceed YouTube’s 500-character limit. Edit SEO before copying.</p>':'')+
+   '<div class="actions"><button class="btn small primary" data-btags-copy="'+i+'" '+(!tags.length||tagsLong?'disabled':'')+'>Copy Tags</button>'+
+   '<button class="btn small ghost" data-btags-done="'+i+'" '+(!tags.length?'disabled':'')+'>'+(v.tagsAppliedAt?"Mark as not added":"Mark Tags Added")+'</button>'+
+   (v.youtubeUrl?'<a class="btn small ghost" href="'+esc(youtubeStudioLink(v))+'" target="_blank" rel="noreferrer">Edit this video in YouTube Studio</a>':'<a class="btn small ghost" href="https://studio.youtube.com" target="_blank" rel="noreferrer">Open YouTube Studio</a>')+'</div>'+
+   '<p class="tiny">'+(v.tagsAppliedAt?'Tags marked added to YouTube Studio.':v.tagsCopiedAt?'Tags copied; paste in YouTube Studio → Content → Details → Show more → Tags, then mark as added.':'Tags are stored in Clip Farm, not yet confirmed on YouTube.')+'</p></div>':"";
   return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-bsel="'+i+'" '+(v.selected?"checked":"")+' '+(batchRunning||["Rendering","Complete"].includes(v.status)?"disabled":"")+'> <strong>'+esc(v.title)+'</strong></label><span class="badge">'+esc(v.status)+'</span></div>'+
   '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
   '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
@@ -242,7 +255,7 @@ function batchDraw(){
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
   (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
-  '</div>';
+  tagPanel+'</div>';
  });
  $("batchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin==="existing").join("")||'<span class="tiny">No SEO-ready Revid videos yet. Load projects and create SEO above.</span>';
  $("newBatchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin!=="existing").join("")||'<span class="tiny">No new videos queued yet.</span>';
@@ -255,7 +268,20 @@ function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,nul
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh,tagCopy=e.target.dataset.btagsCopy,tagDone=e.target.dataset.btagsDone;
+ if(tagCopy!==undefined){
+  const j=batchJobs[Number(tagCopy)];if(!j||j.origin!=="existing")return;
+  if(!j.tags?.length)return alert("Generate or enter tags first.");
+  if(youtubeTagsLength(j.tags)>500)return alert("YouTube tags exceed 500 characters. Edit SEO to shorten them.");
+  try{await navigator.clipboard.writeText(youtubeTagsText(j.tags));j.tagsCopiedAt=new Date().toISOString();batchPersist();batchDraw();say("Tags copied for "+seoVideoLabel(j));}
+  catch(err){alert("Could not copy tags: "+err.message)}return;
+ }
+ if(tagDone!==undefined){
+  const j=batchJobs[Number(tagDone)];if(!j||j.origin!=="existing")return;
+  if(j.tagsAppliedAt){j.tagsAppliedAt="";batchPersist();batchDraw();return}
+  if(!confirm("Confirm you pasted the keyword tags for "+seoVideoLabel(j)+" into that video's YouTube Studio Tags field and saved?"))return;
+  j.tagsAppliedAt=new Date().toISOString();batchPersist();batchDraw();say("Marked keyword tags added: "+seoVideoLabel(j));return;
+ }
  if(videoRefresh!==undefined){const j=batchJobs[Number(videoRefresh)];try{const x=await api("/api/revid/status",{key:keys().revid,pid:j.pid}),d=x.data||x,u=batchSafeUrl(d.videoUrl||d.video_url||d.url||"");if(!u)throw Error("Revid has not returned an exported video URL. Finish exporting this project in Revid.");j.videoUrl=u;j.status="Complete";batchPersist();batchDraw();say("Existing Revid video ready for review")}catch(err){alert(err.message)}return}
  if(copy!==undefined){const j=batchJobs[Number(copy)];try{await navigator.clipboard.writeText((j.seoTitle||j.title)+"\n\n"+j.seoDescription+"\n\nTAGS FOR YOUTUBE STUDIO: "+(j.tags||[]).join(", "));say("YouTube title, description and tags copied")}catch(e){alert(e.message)}return}
  if(refresh!==undefined){await batchPublishStatus(Number(refresh));return}
@@ -267,7 +293,7 @@ $("batchList").onclick=async e=>{
   const keyword=prompt("Primary researched keyword",j.primaryKeyword);if(keyword===null)return;
   const tags=prompt("Tags (comma-separated)",(j.tags||[]).join(", "));if(tags===null)return;
   j.seoTitle=title.trim().slice(0,100);j.seoDescription=description.slice(0,5000);j.primaryKeyword=keyword.trim();
-  j.tags=tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,50);batchPersist();batchDraw();return;
+  j.tags=tags.split(",").map(x=>x.trim()).filter(Boolean).slice(0,50);j.tagsCopiedAt="";j.tagsAppliedAt="";batchPersist();batchDraw();return;
  }
  if(i===undefined)return;const j=batchJobs[+i];if(j.origin==="existing")return alert("Existing Revid videos are already rendered. Edit SEO instead of the narration.");if(batchRunning)return alert("Stop the batch before editing.");
  const next=prompt("Edit narration for "+j.title,j.script);if(next===null)return;if(!next.trim())return alert("Narration cannot be blank.");
@@ -327,7 +353,7 @@ function seoAttach(records){
   const p=projectById.get(r.pid),prior=statuses.get(r.pid);
   if(prior?.publishContentId||["Published","Submitted","Processing","Submitting"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a submitted YouTube publishing request. Verify it before changing metadata.");
   const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
-   pid:p.pid,origin:"existing",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
+   pid:p.pid,origin:"existing",tagsCopiedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsCopiedAt||"":"",tagsAppliedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsAppliedAt||"":"",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
   target.set(r.pid,item);
  }
  batchJobs=[...batchJobs.filter(j=>j.origin!=="existing"),...target.values()];batchPersist();batchDraw();existingDrawProjects();return records.length;
@@ -656,7 +682,7 @@ export default {async fetch(request){
    if(!seoTitle||!description||!Array.isArray(d.hashtags)||!Array.isArray(d.tags))throw Error("Gemini did not return complete SEO metadata.");
    const hashtags=d.hashtags.map(v=>String(v).trim()).filter(x=>/^#[A-Za-z0-9_]+$/.test(x)).slice(0,4);
    const cleanDescription=(description+" "+hashtags.join(" ")).trim().slice(0,5000);
-   return json({projectId:pid,revidTitle:title,seo:{title:seoTitle,description:cleanDescription,primaryKeyword:String(d.primaryKeyword||"").trim().slice(0,200),tags:d.tags.map(x=>String(x).trim().replace(/^#/,"")).filter(Boolean).slice(0,25)},research:{source:"vidIQ keyword research",keywordIdeas:keywordIdeas.slice(0,12),sourceContext:source?"Revid project content":"Revid project title only",reviewRequired:true}});
+   return json({projectId:pid,revidTitle:title,seo:{title:seoTitle,description:cleanDescription,primaryKeyword:String(d.primaryKeyword||"").trim().slice(0,200),tags:d.tags.map(x=>String(x).trim().replace(/^#/,"")).filter(Boolean).slice(0,25)},research:{source:"vidIQ keyword research + Gemini SEO",keywordIdeas:keywordIdeas.slice(0,12),sourceContext:source?"Revid project content":"Revid project title only",reviewRequired:true}});
   }
   if(request.method==="POST"&&url.pathname==="/api/gemini/research-batch"){
    const {key,topic,direction,count,references,keywords}=await request.json();
