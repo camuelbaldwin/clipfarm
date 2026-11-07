@@ -437,6 +437,58 @@ async function batchPublishStatus(index){
   alert(j.publishStatus==="Published"?"YouTube has confirmed the video is published.":j.publishStatus==="Failed"?j.error:"Still processing at Revid. Check again shortly.");
  }catch(e){alert("YouTube status check failed: "+e.message)}
 }
+let youtubeConnected=false,youtubeUploadBusy=false;
+async function refreshDirectYoutube(){
+ try{
+  const d=await api("/api/youtube/status",{});
+  youtubeConnected=!!d.connected;
+  $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected for direct Unlisted uploads.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
+  $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
+ }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
+ return youtubeConnected;
+}
+$("youtubeRefreshConnection").onclick=refreshDirectYoutube;
+$("youtubeConnect").onclick=async()=>{
+ const clientId=$("youtubeOAuthClientId").value.trim(),clientSecret=$("youtubeOAuthClientSecret").value.trim();
+ if(!clientId)return alert("Enter your Google OAuth Desktop client ID. See Mac setup instructions.");
+ try{
+  const r=await api("/api/youtube/connect",{clientId,clientSecret});
+  if(!r.authorizationUrl)throw Error("No Google authorization link was returned.");
+  window.open(r.authorizationUrl,"_blank","noopener,noreferrer");
+  $("youtubeDirectStatus").textContent="Finish Google authorization in your browser, then click Check connection.";
+ }catch(e){alert("YouTube connection: "+e.message)}
+};
+$("youtubeDisconnect").onclick=async()=>{try{await api("/api/youtube/disconnect",{});await refreshDirectYoutube()}catch(e){alert(e.message)}};
+async function uploadToYouTubeUnlisted(index){
+ const j=batchJobs[index];
+ if(!j||!j.videoUrl||!j.pid||j.status!=="Complete")return alert("This video must finish rendering in Revid first.");
+ if(!j.seoTitle?.trim()||!j.seoDescription?.trim()||!Array.isArray(j.tags))return alert("Prepare the video's complete YouTube metadata first.");
+ if(j.youtubeId||j.publishContentId)return alert("Already sent to YouTube. Open the existing video instead of uploading a duplicate.");
+ if(!j.approved)return alert("Preview the video and check Approved before upload.");
+ if($("youtubeVisibility").value!=="unlisted")return alert("Direct YouTube uploads are Unlisted only. Choose Unlisted.");
+ if(youtubeUploadBusy)return alert("Another Unlisted upload is in progress.");
+ if(!await refreshDirectYoutube())return alert("Connect your YouTube account in Clip Farm's Mac app first.");
+ if(!keys().revid)return alert("Connect your Revid API key first.");
+ if(!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
+ youtubeUploadBusy=true;const progress=$("youtubeUploadProgress");progress.textContent="Uploading Revid video "+j.pid+" to YouTube as Unlisted…";
+ $("youtubeUploadAll").disabled=true;
+ try{
+  const result=await api("/api/youtube/upload-unlisted",{pid:j.pid,revidKey:keys().revid,title:j.seoTitle,description:j.seoDescription,tags:j.tags,visibility:"unlisted"});
+  if(!result.youtubeId||result.visibility!=="unlisted")throw Error("YouTube did not confirm Unlisted visibility. Check YouTube Studio before retrying.");
+  j.youtubeId=result.youtubeId;j.youtubeUrl=result.youtubeUrl;j.youtubeVisibility=result.visibility;j.publishStatus="Unlisted";j.tagsAppliedAt=new Date().toISOString();j.error="";
+  batchPersist();batchDraw();progress.textContent="Uploaded as Unlisted: "+j.seoTitle;
+  say("YouTube Unlisted upload confirmed");
+ }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
+ finally{youtubeUploadBusy=false;await refreshDirectYoutube()}
+}
+$("youtubeUploadAll").onclick=async()=>{
+ const eligible=batchJobs.map((j,i)=>({...j,index:i})).filter(j=>j.pid&&j.videoUrl&&j.status==="Complete"&&j.approved&&j.seoTitle&&j.seoDescription&&!j.youtubeId&&!j.publishContentId);
+ if(!eligible.length)return alert("No approved, SEO-ready finished Revid videos to upload.");
+ if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
+ if(!confirm("Start "+eligible.length+" individual UNLISTED YouTube uploads? Each is a separate upload. No videos will be public."))return;
+ for(const j of eligible){await uploadToYouTubeUnlisted(j.index);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
+};
+refreshDirectYoutube();
 $("openUnlistedStudio").onclick=()=>{
  if($("youtubeVisibility").value!=="unlisted")return alert("Choose Unlisted visibility first.");
  alert("YouTube Studio will open. Upload the Revid MP4 from its video card, fill in the matched title/description/tags, then choose Unlisted in the Visibility step and Save. Clip Farm cannot force Unlisted through Revid's Publish Now endpoint.");
