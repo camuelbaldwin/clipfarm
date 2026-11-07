@@ -363,7 +363,7 @@ function seoAttach(records){
  const statuses=new Map(batchJobs.filter(j=>j.pid&&j.origin==="existing").map(j=>[j.pid,j]));const target=new Map(statuses);
  for(const r of records){
   const p=projectById.get(r.pid),prior=statuses.get(r.pid);
-  if(prior?.publishContentId||["Published","Submitted","Processing","Submitting"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a submitted YouTube publishing request. Verify it before changing metadata.");
+  if(prior?.youtubeId||prior?.publishContentId||["Published","Submitted","Processing","Submitting","Unlisted"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a YouTube upload. Edit metadata in YouTube Studio rather than replacing the project SEO.");
   const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
    pid:p.pid,origin:"existing",youtubeId:prior?.youtubeId||"",youtubeVisibility:prior?.youtubeVisibility||"",youtubeUrl:prior?.youtubeUrl||"",draftPreparedAt:prior?.seoTitle===r.title&&prior?.seoDescription===r.description?prior?.draftPreparedAt||"":"",tagsCopiedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsCopiedAt||"":"",tagsAppliedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsAppliedAt||"":"",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
   target.set(r.pid,item);
@@ -459,23 +459,23 @@ $("youtubeConnect").onclick=async()=>{
  }catch(e){alert("YouTube connection: "+e.message)}
 };
 $("youtubeDisconnect").onclick=async()=>{try{await api("/api/youtube/disconnect",{});await refreshDirectYoutube()}catch(e){alert(e.message)}};
-async function uploadToYouTubeUnlisted(index){
+async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
  const j=batchJobs[index];
  if(!j||!j.videoUrl||!j.pid||j.status!=="Complete")return alert("This video must finish rendering in Revid first.");
  if(!j.seoTitle?.trim()||!j.seoDescription?.trim()||!Array.isArray(j.tags))return alert("Prepare the video's complete YouTube metadata first.");
- if(j.youtubeId||j.publishContentId)return alert("Already sent to YouTube. Open the existing video instead of uploading a duplicate.");
+ if(j.youtubeId||j.publishContentId||batchJobs.some(other=>other!==j&&other.pid===j.pid&&(other.youtubeId||other.publishContentId)))return alert("This Revid project is already linked to a YouTube upload. Open its existing video rather than uploading a duplicate.");
  if(!j.approved)return alert("Preview the video and check Approved before upload.");
  if($("youtubeVisibility").value!=="unlisted")return alert("Direct YouTube uploads are Unlisted only. Choose Unlisted.");
  if(youtubeUploadBusy)return alert("Another Unlisted upload is in progress.");
  if(!await refreshDirectYoutube())return alert("Connect your YouTube account in Clip Farm's Mac app first.");
  if(!keys().revid)return alert("Connect your Revid API key first.");
- if(!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
+ if(!skipConfirmation&&!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
  youtubeUploadBusy=true;const progress=$("youtubeUploadProgress");progress.textContent="Uploading Revid video "+j.pid+" to YouTube as Unlisted…";
  $("youtubeUploadAll").disabled=true;
  try{
   const result=await api("/api/youtube/upload-unlisted",{pid:j.pid,revidKey:keys().revid,title:j.seoTitle,description:j.seoDescription,tags:j.tags,visibility:"unlisted"});
   if(!result.youtubeId||result.visibility!=="unlisted")throw Error("YouTube did not confirm Unlisted visibility. Check YouTube Studio before retrying.");
-  j.youtubeId=result.youtubeId;j.youtubeUrl=result.youtubeUrl;j.youtubeVisibility=result.visibility;j.publishStatus="Unlisted";j.tagsAppliedAt=new Date().toISOString();j.error="";
+  for(const rec of batchJobs.filter(x=>x.pid===j.pid)){rec.youtubeId=result.youtubeId;rec.youtubeUrl=result.youtubeUrl;rec.youtubeVisibility=result.visibility;rec.publishStatus="Unlisted";rec.tagsAppliedAt=new Date().toISOString();rec.error=""}
   batchPersist();batchDraw();progress.textContent="Uploaded as Unlisted: "+j.seoTitle;
   say("YouTube Unlisted upload confirmed");
  }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
@@ -486,7 +486,7 @@ $("youtubeUploadAll").onclick=async()=>{
  if(!eligible.length)return alert("No approved, SEO-ready finished Revid videos to upload.");
  if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
  if(!confirm("Start "+eligible.length+" individual UNLISTED YouTube uploads? Each is a separate upload. No videos will be public."))return;
- for(const j of eligible){await uploadToYouTubeUnlisted(j.index);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
+ for(const j of eligible){await uploadToYouTubeUnlisted(j.index,true);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
 };
 refreshDirectYoutube();
 $("openUnlistedStudio").onclick=()=>{
