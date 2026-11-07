@@ -682,7 +682,7 @@ export default {async fetch(request){
    if(!seoTitle||!description||!Array.isArray(d.hashtags)||!Array.isArray(d.tags))throw Error("Gemini did not return complete SEO metadata.");
    const hashtags=d.hashtags.map(v=>String(v).trim()).filter(x=>/^#[A-Za-z0-9_]+$/.test(x)).slice(0,4);
    const cleanDescription=(description+" "+hashtags.join(" ")).trim().slice(0,5000);
-   return json({projectId:pid,revidTitle:title,seo:{title:seoTitle,description:cleanDescription,primaryKeyword:String(d.primaryKeyword||"").trim().slice(0,200),tags:d.tags.map(x=>String(x).trim().replace(/^#/,"")).filter(Boolean).slice(0,25)},research:{source:"vidIQ keyword research",keywordIdeas:keywordIdeas.slice(0,12),sourceContext:source?"Revid project content":"Revid project title only",reviewRequired:true}});
+   return json({projectId:pid,revidTitle:title,seo:{title:seoTitle,description:cleanDescription,primaryKeyword:String(d.primaryKeyword||"").trim().slice(0,200),tags:d.tags.map(x=>String(x).trim().replace(/^#/,"")).filter(Boolean).slice(0,25)},research:{source:"vidIQ keyword research + Gemini SEO",keywordIdeas:keywordIdeas.slice(0,12),sourceContext:source?"Revid project content":"Revid project title only",reviewRequired:true}});
   }
   if(request.method==="POST"&&url.pathname==="/api/gemini/research-batch"){
    const {key,topic,direction,count,references,keywords}=await request.json();
