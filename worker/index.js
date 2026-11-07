@@ -78,7 +78,11 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <section class="card" style="margin:16px 0;background:#16121e">
 <h3 style="margin:0 0 4px">Your Revid video library</h3>
 <p class="tiny">Load your existing Revid projects, select the videos to prepare, and generate or import their YouTube SEO. Project IDs keep all metadata with the right video. No new renders.</p>
-<div class="actions"><button class="btn primary" id="existingLoadProjects">1 · Load Revid videos</button><button class="btn ghost" id="existingGenerateSeo">2 · Create SEO for selected videos</button></div>
+<div class="actions"><button class="btn primary" id="existingLoadProjects">Refresh Revid library</button><button class="btn ghost" id="existingGenerateSeo">Generate SEO for selected videos</button></div>
+<div class="row"><div class="field"><label for="existingProjectFilter">Find videos by name or Revid project ID</label><input id="existingProjectFilter" class="input" placeholder="Search your video library"></div>
+<div class="field"><label for="existingSelectionFilter">Show videos</label><select id="existingSelectionFilter" class="input"><option value="all">All loaded projects</option><option value="needs-seo">Needs SEO</option><option value="seo-ready">SEO prepared</option><option value="not-uploaded">Not yet uploaded</option></select></div></div>
+<div class="actions"><button class="btn ghost" id="existingSelectShown">Select shown</button><button class="btn ghost" id="existingDeselectShown">Deselect shown</button></div>
+<div class="tiny" id="existingLibraryCounts">Select only the videos you want to prepare; you can return for future batches.</div>
 <div class="actions"><label class="btn ghost" for="existingSeoImport">Import SEO JSON package</label><input type="file" id="existingSeoImport" accept=".json,application/json" style="position:absolute;left:-9999px" aria-label="Import SEO JSON package"><button class="btn ghost" id="existingSeoExport">Download matched SEO package</button></div>
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
@@ -217,7 +221,7 @@ function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batc
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
 function batchRead(input){
  const a=Array.isArray(input)?input:input&&Array.isArray(input.videos)?input.videos:null;
- if(!a||!a.length||a.length>100)throw Error("Provide an array of 1–100 videos (or an object with videos array).");
+ if(!a||!a.length||a.length>1000)throw Error("Provide an array of 1–1,000 videos in one import; additional imports can be used for future videos.");
  return a.map((v,i)=>{
   if(!v||typeof v!=="object"||!String(v.script||"").trim())throw Error("Video "+(i+1)+" needs a narration script.");
   const seo=v.seo&&typeof v.seo==="object"?v.seo:{},raw=seo.tags??v.tags??[];
@@ -327,29 +331,39 @@ function existingProjectsNormalize(raw){
   name:String(p.name||p.title||p.projectName||p.project_title||p.metadata?.title||"Untitled Revid project"),
   status:String(p.status||p.state||p.renderStatus||"").toLowerCase(),
   videoUrl:batchSafeUrl(p.videoUrl||p.video_url||p.mp4Url||p.exportUrl||p.url||""),
-  original:p,selected:true,sourceText:String(p.script||p.source?.text||p.source?.prompt||p.prompt||p.description||p.metadata?.description||"").slice(0,3500)
+  original:p,selected:false,sourceText:String(p.script||p.source?.text||p.source?.prompt||p.prompt||p.description||p.metadata?.description||"").slice(0,3500)
  })).filter(p=>p.pid);
 }
+function filteredExistingProjects(){
+ const q=$("existingProjectFilter").value.trim().toLowerCase(),filter=$("existingSelectionFilter").value;
+ const byId=new Map(batchJobs.filter(j=>j.pid).map(j=>[j.pid,j]));
+ return existingProjects.map((p,index)=>({p,index,j:byId.get(p.pid)})).filter(({p,j})=>
+  (!q||p.name.toLowerCase().includes(q)||p.pid.toLowerCase().includes(q))&&
+  (filter==="all"||(filter==="needs-seo"&&!j?.seoTitle)||(filter==="seo-ready"&&!!j?.seoTitle)||(filter==="not-uploaded"&&!j?.youtubeId&&!j?.publishContentId)));
+}
 function existingDrawProjects(){
- const linked=new Map(batchJobs.filter(j=>j.origin==="existing").map(j=>[j.pid,j]));
- $("existingProjects").innerHTML=existingProjects.map((p,i)=>{
-  const j=linked.get(p.pid);
+ const shown=filteredExistingProjects();
+ $("existingLibraryCounts").textContent=existingProjects.length+" Revid projects available in current API response · "+shown.length+" shown · "+existingProjects.filter(p=>p.selected).length+" selected for SEO · "+batchJobs.filter(j=>j.pid&&j.seoTitle).length+" SEO-ready records saved across sessions.";
+ $("existingProjects").innerHTML=shown.map(({p,index:i,j})=>{
   return '<div class="variant"><div class="varianttop"><label><input type="checkbox" data-existing-select="'+i+'" '+(p.selected?"checked":"")+'> <strong>'+esc(p.name)+'</strong></label>'+
-   '<span class="badge">'+(j?.seoTitle?"SEO prepared":"Needs SEO")+'</span></div>'+
-   '<p class="tiny">Revid project ID: '+esc(p.pid)+(p.sourceText?' · Content available':' · Title-only: review SEO')+'</p>'+
+   '<span class="badge">'+(j?.youtubeId?'Uploaded':j?.seoTitle?"SEO prepared":"Needs SEO")+'</span></div>'+
+   '<p class="tiny">Revid project ID: '+esc(p.pid)+(p.sourceText?' · Content available':' · Title only: review SEO')+'</p>'+
    (p.videoUrl?'<a href="'+esc(p.videoUrl)+'" target="_blank" rel="noreferrer">Preview video</a>':'')+
    (j?.seoTitle?'<p class="tiny">YouTube title: '+esc(j.seoTitle)+'</p>':'')+'</div>';
- }).join("")||'<span class="tiny">No Revid projects found yet.</span>';
+ }).join("")||'<span class="tiny">No videos match the current filter.</span>';
 }
-
-$("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;const count=existingProjects.filter(p=>p.selected).length;$("existingStatus").textContent=count+" projects selected for SEO preparation."};
+$("existingProjectFilter").oninput=existingDrawProjects;
+$("existingSelectionFilter").onchange=existingDrawProjects;
+$("existingSelectShown").onclick=()=>{for(const x of filteredExistingProjects())x.p.selected=true;existingDrawProjects()};
+$("existingDeselectShown").onclick=()=>{for(const x of filteredExistingProjects())x.p.selected=false;existingDrawProjects()};
+$("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;existingDrawProjects()};
 function seoBundle(){
  return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.origin==="existing"&&j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
 }
 $("existingSeoExport").onclick=()=>{const bundle=seoBundle();if(!bundle.videos.length)return alert("No matched Revid SEO records to export.");batchDownload("clipfarm-youtube-seo-package.json",bundle)};
 function seoVerify(input){
  if(!input||input.format!=="clipfarm-seo-v1"||!Array.isArray(input.videos))throw Error("Not a Clip Farm SEO v1 package.");
- if(input.videos.length>100||!input.videos.length)throw Error("SEO package must include 1–100 video records.");
+ if(input.videos.length>1000||!input.videos.length)throw Error("SEO package must include 1–1,000 video records per import. Future packages are also supported.");
  const used=new Set();
  return input.videos.map((v,i)=>{
   const pid=String(v.projectId||"").trim(),seo=v.seo||{};
@@ -385,8 +399,8 @@ $("existingSeoImport").onchange=async e=>{
 
 $("existingGenerateSeo").onclick=async()=>{
  if(existingSeoBusy)return;
- const k=keys(),projects=existingProjects.filter(p=>p.selected);
- if(!projects.length)return alert("Load your Revid projects and select at least one video.");
+ const k=keys(),projects=existingProjects.filter(p=>p.selected&&!batchJobs.some(j=>j.pid===p.pid&&(j.youtubeId||j.publishContentId)));
+ if(!projects.length)return alert("Select at least one Revid project that has not already been uploaded.");
  if(!k.gemini||!k.vidiq)return alert("Save both Gemini and vidIQ keys. vidIQ performs keyword research; Gemini writes final metadata.");
  if(projects.some(p=>!p.name||p.name==="Untitled Revid project"))return alert("Some selected projects have no useful title. Rename them in Revid, reload, then generate SEO.");
  if(!confirm("Research SEO for "+projects.length+" Revid videos? This uses vidIQ research calls and Gemini API credits. No videos will render or publish. Continue?"))return;
@@ -409,7 +423,12 @@ $("existingGenerateSeo").onclick=async()=>{
 $("existingLoadProjects").onclick=async()=>{
  const key=keys().revid;if(!key)return alert("Save a Revid API key first.");
  const b=$("existingLoadProjects");b.disabled=true;$("existingStatus").textContent="Loading existing projects from your Revid account…";
- try{const result=await api("/api/revid/projects",{key});existingProjects=existingProjectsNormalize(result);existingDrawProjects();$("existingStatus").textContent=existingProjects.length+" existing Revid projects loaded. Select the 21 you want, then Create SEO. Nothing will be published until you approve."}
+ try{const result=await api("/api/revid/projects",{key});const selectedIds=new Set(existingProjects.filter(p=>p.selected).map(p=>p.pid));
+ const newlyLoaded=existingProjectsNormalize(result);
+ const known=new Map(existingProjects.map(p=>[p.pid,p]));
+ for(const p of newlyLoaded){p.selected=selectedIds.has(p.pid);known.set(p.pid,p)}
+ existingProjects=[...known.values()];
+ existingDrawProjects();$("existingStatus").textContent=newlyLoaded.length+" projects returned by Revid. Your previous selections and SEO remain available. Select any videos for the next batch.";}
  catch(e){$("existingStatus").textContent=e.message;alert("Could not load Revid projects: "+e.message)}
  finally{b.disabled=false}
 };
