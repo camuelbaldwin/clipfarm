@@ -37,15 +37,22 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run pack:mac:x64
-      - name: Verify Intel installer exists
+      - name: Verify Intel DMG and generate checksum
         run: |
           ls -lh mac/release
-          test -n "$(find mac/release -maxdepth 1 -name '*.dmg' -print -quit)"
+          DMG="$(find mac/release -maxdepth 1 -name '*.dmg' -print -quit)"
+          test -n "$DMG"
+          hdiutil imageinfo "$DMG" > /dev/null
+          cd mac/release
+          shasum -a 256 ./*.dmg > SHA256SUMS.txt
+          cat SHA256SUMS.txt
       - name: Upload Intel Mac installer ZIP
         uses: actions/upload-artifact@v4
         with:
           name: clip-farm-mac-intel
-          path: mac/release/*.dmg
+          path: |
+            mac/release/*.dmg
+            mac/release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 90
       - name: Publish direct-download release after successful build
@@ -54,4 +61,4 @@ jobs:
           REPO: ${{ github.repository }}
           TAG: mac-build-${{ github.run_number }}
         run: |
-          gh release create "$TAG" mac/release/*.dmg --repo "$REPO" --title "Clip Farm Studio — Intel Mac build ${{ github.run_number }}" --notes "Unsigned Intel Mac installer for macOS 10.15 or newer. Open the DMG, drag Clip Farm Studio to Applications, then Control-click Open if macOS blocks the first launch. Preview build."
+          gh release create "$TAG" mac/release/*.dmg mac/release/SHA256SUMS.txt --repo "$REPO" --title "Clip Farm Studio — Intel Mac build ${{ github.run_number }}" --notes "Unsigned Intel Mac installer for macOS 10.15 or newer. Open the DMG, drag Clip Farm Studio to Applications, then Control-click Open if macOS blocks the first launch. Preview build."
