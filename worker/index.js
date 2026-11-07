@@ -238,7 +238,7 @@ function batchDraw(){
   '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
   '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
-  '<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> <button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
+  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> ')+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
   (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small primary" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish to YouTube</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
@@ -255,7 +255,8 @@ function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,nul
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh;
+ if(videoRefresh!==undefined){const j=batchJobs[Number(videoRefresh)];try{const x=await api("/api/revid/status",{key:keys().revid,pid:j.pid}),d=x.data||x,u=batchSafeUrl(d.videoUrl||d.video_url||d.url||"");if(!u)throw Error("Revid has not returned an exported video URL. Finish exporting this project in Revid.");j.videoUrl=u;j.status="Complete";batchPersist();batchDraw();say("Existing Revid video ready for review")}catch(err){alert(err.message)}return}
  if(copy!==undefined){const j=batchJobs[Number(copy)];try{await navigator.clipboard.writeText((j.seoTitle||j.title)+"\n\n"+j.seoDescription+"\n\nTAGS FOR YOUTUBE STUDIO: "+(j.tags||[]).join(", "));say("YouTube title, description and tags copied")}catch(e){alert(e.message)}return}
  if(refresh!==undefined){await batchPublishStatus(Number(refresh));return}
  if(p!==undefined){await publishBatchVideo(+p);return}
@@ -301,7 +302,7 @@ function existingDrawProjects(){
 
 $("existingProjects").onchange=e=>{const i=e.target.dataset.existingSelect;if(i===undefined)return;existingProjects[Number(i)].selected=e.target.checked;const count=existingProjects.filter(p=>p.selected).length;$("existingStatus").textContent=count+" projects selected for SEO preparation."};
 function seoBundle(){
- return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
+ return {format:"clipfarm-seo-v1",createdAt:new Date().toISOString(),videos:batchJobs.filter(j=>j.origin==="existing"&&j.pid&&j.seoTitle).map(j=>({projectId:j.pid,revidTitle:j.title,videoUrl:j.videoUrl||"",seo:{title:j.seoTitle,description:j.seoDescription,primaryKeyword:j.primaryKeyword,tags:j.tags},research:j.research||null}))};
 }
 $("existingSeoExport").onclick=()=>{const bundle=seoBundle();if(!bundle.videos.length)return alert("No matched Revid SEO records to export.");batchDownload("clipfarm-youtube-seo-package.json",bundle)};
 function seoVerify(input){
@@ -519,7 +520,7 @@ $("pipelineQueue").onclick=()=>{
 try{const d=JSON.parse(localStorage.getItem(PIPELINE_STORE)||"null");if(d&&typeof d==="object"){pipelineRefs=Array.isArray(d.refs)?d.refs:[];pipelineKeywords=Array.isArray(d.keywords)?d.keywords:[];pipelineDrafts=Array.isArray(d.drafts)?d.drafts:[];if(d.topic)$("pipelineTopic").value=d.topic;if(d.direction)$("pipelineDirection").value=d.direction}}catch(e){}
 pipelineDraw();
 
-try{const saved=JSON.parse(localStorage.getItem(BATCH_STORE)||"[]");if(Array.isArray(saved))batchJobs=saved.map(x=>({...batchDefaults,...x,selected:false}))}catch(e){}batchDraw();
+try{const saved=JSON.parse(localStorage.getItem(BATCH_STORE)||"[]");if(Array.isArray(saved))batchJobs=saved.map(x=>({...batchDefaults,...x,origin:x.origin||((x.pid&&x.status==="Complete"&&(x.credits===0||x.research?.source==="vidIQ keyword research"))?"existing":"new"),selected:false}))}catch(e){}batchDraw();
 
 $("trendBtn").onclick=async()=>{
  let k=keys(),kw=$("keyword").value.trim();
