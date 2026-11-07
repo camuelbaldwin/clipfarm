@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, shell } from "electron";
 import { createServer } from "node:http";
+import { handleYouTube, restoreYouTubeConnection } from "./youtube-upload.mjs";
 import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +26,7 @@ async function startLocalServer() {
 
   server = createServer(async (incoming, outgoing) => {
     try {
+      if(await handleYouTube(incoming,outgoing,new URL(incoming.url||"/","http://127.0.0.1:43129")))return;
       const address = server.address();
       const origin = `http://127.0.0.1:${address.port}`;
       const headers = new Headers();
@@ -114,6 +116,7 @@ function installMenu() {
 
 app.whenReady().then(async () => {
   try {
+    await restoreYouTubeConnection();
     await startLocalServer();
     installMenu();
     createMainWindow();

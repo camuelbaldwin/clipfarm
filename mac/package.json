@@ -9,7 +9,8 @@
     "sync:worker": "node scripts/sync-worker.mjs",
     "start": "npm run sync:worker && electron .",
     "pack:mac:x64": "npm run sync:worker && electron-builder --mac dmg --x64",
-    "pack:mac:arm64": "npm run sync:worker && electron-builder --mac dmg --arm64"
+    "pack:mac:arm64": "npm run sync:worker && electron-builder --mac dmg --arm64",
+    "test:unlisted": "node scripts/verify-unlisted.mjs"
   },
   "devDependencies": {
     "electron": "32.3.3",
@@ -24,7 +25,8 @@
     "files": [
       "main.mjs",
       "worker.mjs",
-      "package.json"
+      "package.json",
+      "youtube-upload.mjs"
     ],
     "mac": {
       "category": "public.app-category.video",
@@ -32,15 +34,25 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "identity": null
     },
     "dmg": {
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   }

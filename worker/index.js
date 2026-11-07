@@ -64,11 +64,11 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <h3 style="font-size:14px;margin-top:18px">New video drafts</h3><div class="videolist" id="pipelineDrafts"><span class="tiny">No drafts yet.</span></div>
 <section class="card" id="newRenderWorkspace"><h3>Send New Videos to Revid</h3>
 <p class="tiny">Import a batch or add your own script above, estimate credits, then confirm before creating new Revid videos.</p>
-<div id="newRenderControls"></div><div class="tiny" id="newRenderSummary"></div><div class="videolist" id="newBatchList"></div></section>
+<div id="newRenderControls"></div><div class="actions"><button class="btn ghost" id="newGenerateAllSeo">Generate SEO for all completed new Revid videos</button></div><div class="tiny" id="newSeoProgress" role="status" aria-live="polite"></div><div class="tiny" id="newRenderSummary"></div><div class="videolist" id="newBatchList"></div></section>
 </section>
 <section class="card tab-panel" id="batchPanel">
 <div class="cardhead"><div><h2>Publish Existing Revid Videos</h2><p>Load videos already created in Revid, add researched YouTube metadata, preview, approve, and publish.</p></div><div class="number">2</div></div>
-<div class="notice good">Existing Revid projects only. <b>Target YouTube visibility: Unlisted.</b> Anyone with the video link can watch, but it does not appear publicly on your channel. Revid’s current publishing API does not confirm a YouTube Unlisted setting; Clip Farm will not send your video to Revid Publish Now while Unlisted is selected.</div>
+<div class="notice good"><b>Clip Farm → Revid → YouTube Unlisted.</b> Finish a video in Revid, then upload straight to YouTube as Unlisted with its researched title, description and tags. No manual MP4 download.</div>
 <div class="actions"><button class="btn ghost" id="batchTemplate">Download JSON example</button><button class="btn ghost" id="batchExport">Export queue/status</button></div>
 <div class="field"><label for="batchFile">Import video batch (.json)</label><input id="batchFile" type="file" accept=".json,application/json" class="input"><small>Format: title, script, prompt, stylePrompt, referenceUrl, and optional seo: {title, description, primaryKeyword, tags}. Importing replaces the visible queue; it does not start rendering.</small></div>
 <div class="field"><label for="batchJson">Or paste a JSON array</label><textarea id="batchJson" style="min-height:110px" placeholder='[{"title":"Why Elevators Are Safe","script":"...","prompt":"3D elevator cutaway...","referenceUrl":"https://www.youtube.com/watch?v=..."}]'></textarea></div>
@@ -83,9 +83,13 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
-<div class="field"><label for="youtubeVisibility">YouTube visibility when uploading</label><select id="youtubeVisibility" class="input"><option value="unlisted" selected>Unlisted — only people with the link can watch</option><option value="public">Public — visible to everyone (advanced)</option></select><small>Unlisted is your default. Revid does not document a confirmed visibility field, so Unlisted requires uploading through YouTube Studio for now. Clip Farm blocks its Revid Publish Now action unless Public is deliberately selected.</small></div>
-<div class="actions"><button class="btn primary" id="openUnlistedStudio">Open YouTube Studio to upload Unlisted</button></div>
-<div class="field"><label>Your YouTube publishing channel</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Click Load accounts to find the YouTube channel already connected in Revid. If none appears, connect it in Revid Settings → Integrations. Revid sends the approved title and description; copy tags to YouTube Studio when needed.</small></div><details style="margin:16px 0;border:1px solid #68547b;padding:12px;border-radius:10px"><summary style="cursor:pointer;font-weight:700">Advanced: enable immediate public publishing through Revid</summary><div class="notice" style="margin-top:12px">Revid's Publish Now action may post publicly right away. It does NOT guarantee Unlisted visibility. To use it, select Public in the visibility field and explicitly confirm.</div><label style="display:flex;gap:8px;align-items:center;margin:12px 0;font-size:12px"><input type="checkbox" id="allowImmediatePublic"> I understand these videos may go public immediately</label></details><h3 style="margin-top:18px">SEO-ready Revid videos</h3><div class="videolist" id="batchList"></div>
+<section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Authorize your YouTube account once; your Mac securely saves the connection. Enable YouTube Data API, create an OAuth Desktop client, and approve upload permissions in your browser.</p><p class="tiny"><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Enable YouTube Data API</a> · <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Create OAuth Desktop client</a> · If your OAuth consent screen is in Testing, add your Google account as a test user.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div></section>
+<div class="field"><label for="youtubeVisibility">YouTube visibility when uploading</label><select id="youtubeVisibility" class="input"><option value="unlisted" selected>Unlisted — only people with the link can watch</option><option value="public">Public — visible to everyone (advanced)</option></select><small>Unlisted is the default for the direct YouTube upload. Public posting through Revid remains a separate advanced option.</small></div>
+<div class="actions"><button class="btn primary" id="youtubeUploadAll">Upload all approved SEO-ready videos as Unlisted</button><button class="btn ghost" id="openUnlistedStudio">Open YouTube Studio</button></div><div id="youtubeUploadProgress" class="tiny" role="status" aria-live="polite">No upload in progress.</div>
+<details style="margin:16px 0;border:1px solid #68547b;padding:12px;border-radius:10px"><summary style="cursor:pointer;font-weight:700">Advanced: public publishing through Revid (separate from Unlisted)</summary>
+<div class="notice" style="margin-top:12px">Revid's Publish Now action may post publicly immediately. Do not use it for Unlisted uploads.</div>
+<div class="field"><label>Revid-connected YouTube channel for Public posts</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load Revid-connected YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>This is separate from the direct Google connection above. Only used when you deliberately choose Public.</small></div>
+<label style="display:flex;gap:8px;align-items:center;margin:12px 0;font-size:12px"><input type="checkbox" id="allowImmediatePublic"> I understand these videos may go Public immediately</label></details><h3 style="margin-top:18px">SEO-ready Revid videos</h3><div class="videolist" id="batchList"></div>
 </section><section class="card tab-panel" id="keywordPanel"><div class="cardhead"><div><h2>Google keyword metrics</h2><p>Enter a keyword to see estimated monthly searches, historical volume, competition, bids, and related keyword ideas.</p></div><div class="number">K</div></div><div class="row"><div class="field"><label for="keyword">Keyword or topic</label><input class="input" id="keyword" placeholder="e.g. perfume layering"></div><div class="field"><label for="location">Search location</label><select id="location"><option value="United States">United States</option><option value="Worldwide">Worldwide</option><option value="United Kingdom">United Kingdom</option><option value="Canada">Canada</option><option value="Australia">Australia</option><option value="India">India</option></select></div></div><div class="actions"><button class="btn primary" id="trendBtn">Get keyword metrics</button></div><div class="result" id="trendResult" style="margin-top:14px"><div class="analysis-grid"><div class="analysis-part"><b>AVG. MONTHLY SEARCHES</b><p id="searchVolume">Not available</p></div><div class="analysis-part"><b>ADS COMPETITION</b><p id="adsCompetition">Not available</p></div><div class="analysis-part"><b>COMPETITION INDEX</b><p id="competitionIndex">Not available</p></div><div class="analysis-part"><b>TOP-OF-PAGE BID RANGE</b><p id="bidRange">Not available</p></div></div><div id="trendChart" style="display:flex;align-items:end;height:130px;gap:3px;margin-top:14px"></div><div id="trendDates" class="tiny"></div><div class="field"><label>Related keyword ideas</label><div id="relatedList"></div></div><div class="tiny" id="trendNote"></div></div><div class="notice good" style="margin-top:13px">Google Ads API keyword research is free to call. This feature only reads estimates; it never creates ads or spends campaign budget. Add Google OAuth credentials and a Google Ads customer ID in API connections. Metrics are Google Search estimates; the competition score describes ad placement competition, not organic ranking difficulty.</div></section>
 </main><aside class="rail">
 <section class="card"><h3>API connections</h3><p>Keys are saved only in this browser or app profile. The app sends each key to its provider when you use that feature. Clear saved keys any time.</p><div class="field"><label for="geminiKey">Gemini API key</label><input class="input" id="geminiKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="revidKey">Revid API key</label><input class="input" id="revidKey" type="password" autocomplete="off" placeholder="Paste key"></div><div class="field"><label for="vidiqKey">vidIQ MCP API key</label><input class="input" id="vidiqKey" type="password" autocomplete="off" placeholder="Create in vidIQ Account Settings → MCP"><small><a href="https://app.vidiq.com/account/settings/mcp" target="_blank" rel="noreferrer">Get vidIQ API key</a> · Uses vidIQ credits.</small></div><div class="legacy-setup"><div class="field"><label for="apifyKey">Apify API token · social link extraction</label><input class="input" id="apifyKey" type="password" autocomplete="off" placeholder="Paste token"></div><details class="field"><summary style="cursor:pointer;font-size:12px;font-weight:700">Google Ads keyword API connection</summary><p class="tiny" style="margin:7px 0">Enable the Google Ads API in your Cloud project and request Explorer access for live account data. Generate OAuth credentials and a refresh token with the <code>https://www.googleapis.com/auth/adwords</code> scope, then enter them below. Test-only access cannot query live accounts. These credentials are saved only in this browser or app profile.</p><div class="field"><label for="adsClientId">OAuth client ID</label><input class="input" id="adsClientId" autocomplete="off" placeholder="Google Cloud OAuth client ID"></div><div class="field"><label for="adsClientSecret">OAuth client secret</label><input class="input" id="adsClientSecret" type="password" autocomplete="off" placeholder="Google Cloud OAuth client secret"></div><div class="field"><label for="adsRefreshToken">OAuth refresh token</label><input class="input" id="adsRefreshToken" type="password" autocomplete="off" placeholder="Refresh token with adwords scope"></div><div class="field"><label for="adsCustomerId">Google Ads customer ID</label><input class="input" id="adsCustomerId" inputmode="numeric" autocomplete="off" placeholder="10 digits, no hyphens"></div><div class="field"><label for="adsLoginCustomerId">Manager customer ID · optional</label><input class="input" id="adsLoginCustomerId" inputmode="numeric" autocomplete="off" placeholder="Only if accessing through a manager"></div><div class="tiny"><a href="https://console.cloud.google.com/apis/library/googleads.googleapis.com" target="_blank" rel="noreferrer">Enable Google Ads API</a> · <a href="https://developers.google.com/google-ads/api/docs/productionize/access-levels" target="_blank" rel="noreferrer">Request Explorer access</a> · <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noreferrer">OAuth Playground</a>. Use your own OAuth client in the Playground and the <code>adwords</code> scope. Cloud project access replaces the old developer-token setup.</div></details></div><div class="actions"><button class="btn small primary" id="saveKeysBtn">Save keys</button><button class="btn small ghost" id="forgetBtn">Clear saved keys</button><span class="tiny" id="keysStatus" role="status" aria-live="polite"></span></div><div class="tiny" style="margin-top:8px">vidIQ supplies video intelligence; Gemini generates scripts and metadata; Revid renders and publishes to connected YouTube accounts.</div></section>
@@ -208,7 +212,7 @@ $("newAddVideo").onclick=()=>{
 
 const BATCH_STORE="clipfarm-batch-v1";
 let batchJobs=[],batchRunning=false,batchStop=false,batchEstimated=false;let existingProjects=[],existingSeoBusy=false;
-const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null,tagsCopiedAt:"",tagsAppliedAt:"",draftPreparedAt:""};
+const batchDefaults={research:null,title:"Untitled video",script:"",prompt:"",stylePrompt:"Realistic 3D cutaways, simple fifth-grade narration, large captions, 9:16 vertical.",referenceUrl:"",seoTitle:"",seoDescription:"",primaryKeyword:"",tags:[],selected:true,status:"Ready",origin:"new",pid:"",videoUrl:"",approved:false,credits:null,error:"",publishStatus:"",youtubeUrl:"",publishContentId:"",publishResult:null,tagsCopiedAt:"",tagsAppliedAt:"",draftPreparedAt:"",youtubeId:"",youtubeVisibility:""};
 function batchPersist(){try{localStorage.setItem(BATCH_STORE,JSON.stringify(batchJobs))}catch(e){$("batchSummary").textContent="Could not save queue locally: "+e.message}}
 function batchSafeUrl(v){try{const u=new URL(v);return ["https:","http:"].includes(u.protocol)?u.href:""}catch{return""}}
 function batchRead(input){
@@ -253,12 +257,13 @@ function batchDraw(){
   '<p>'+(v.origin==="existing"?'Existing Revid video · No rendering credits':'New video · Estimated render credits: '+(v.credits===null?'not estimated':v.credits))+' · '+esc(v.error||"")+'</p>'+
   '<p class="tiny">YouTube title: '+esc(v.seoTitle||v.title)+' · Keyword: '+esc(v.primaryKeyword||"Not set")+' · Tags: '+tags.length+' · YouTube: '+esc(v.publishStatus||"Not published")+'</p>'+(v.research?'<p class="tiny">Research: '+fmt(v.research.views)+' reference views · '+esc(v.research.outlierScore)+'× breakout · title score '+esc(v.research.titleScore)+'/100</p>':'')+
   (v.referenceUrl?'<a href="'+esc(v.referenceUrl)+'" target="_blank" rel="noreferrer">Reference</a> · ':'')+
-  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> ')+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
+  (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> '+(v.status==="Complete"&&v.pid?'<button class="btn small ghost" data-new-generate-seo="'+i+'">Generate SEO (vidIQ + Gemini)</button> ':''))+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
-  (v.origin==="existing"?'<button class="btn small primary" data-bdraft="'+i+'" '+(!v.seoTitle||!v.seoDescription?'disabled':'')+'>Save SEO for Later</button>':'')+
+  (v.videoUrl&&v.pid&&v.seoTitle&&v.seoDescription?'<button class="btn small primary" data-unlisted-upload="'+i+'" '+(v.youtubeId||v.publishContentId?'disabled':'')+'>Upload Unlisted + SEO</button>':'')+
+  (v.origin==="existing"?'<button class="btn small ghost" data-bdraft="'+i+'" '+(!v.seoTitle||!v.seoDescription?'disabled':'')+'>Save SEO for Later</button>':'')+
   (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small ghost" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish Publicly (Advanced)</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
-  (v.origin==="existing"?'<p class="tiny">'+(v.draftPreparedAt?'SEO saved in Clip Farm. Not uploaded to YouTube.':'SEO not saved for later yet. No upload by this feature.')+'</p>':'')+tagPanel+'</div>';
+  (v.youtubeId?'<p class="tiny">YouTube '+esc(v.youtubeVisibility||'Unlisted')+' · '+esc(v.youtubeId)+'</p>':'')+(v.origin==="existing"?'<p class="tiny">'+(v.draftPreparedAt?'SEO saved in Clip Farm. Not uploaded to YouTube.':'SEO not saved for later yet. No upload by this feature.')+'</p>':'')+tagPanel+'</div>';
  });
  $("batchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin==="existing").join("")||'<span class="tiny">No SEO-ready Revid videos yet. Load projects and create SEO above.</span>';
  $("newBatchList").innerHTML=cards.filter((_,i)=>batchJobs[i].origin!=="existing").join("")||'<span class="tiny">No new videos queued yet.</span>';
@@ -271,7 +276,9 @@ function batchDownload(filename,obj){const blob=new Blob([JSON.stringify(obj,nul
 $("batchExport").onclick=()=>batchDownload("clipfarm-batch-status.json",batchJobs);
 $("batchList").onchange=e=>{let i=e.target.dataset.bsel;if(i!==undefined){batchJobs[+i].selected=e.target.checked;batchInvalidate()}i=e.target.dataset.bapprove;if(i!==undefined){batchJobs[+i].approved=e.target.checked;batchPersist();batchDraw()}};
 $("batchList").onclick=async e=>{
- const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh,tagCopy=e.target.dataset.btagsCopy,tagDone=e.target.dataset.btagsDone,draft=e.target.dataset.bdraft;
+ const p=e.target.dataset.bpublish,x=e.target.dataset.bseo,i=e.target.dataset.bedit,copy=e.target.dataset.bcopy,refresh=e.target.dataset.brefresh,videoRefresh=e.target.dataset.bvideoRefresh,tagCopy=e.target.dataset.btagsCopy,tagDone=e.target.dataset.btagsDone,draft=e.target.dataset.bdraft,unlisted=e.target.dataset.unlistedUpload,newSeo=e.target.dataset.newGenerateSeo;
+ if(newSeo!==undefined){await generateNewSeo(Number(newSeo));return}
+ if(unlisted!==undefined){await uploadToYouTubeUnlisted(Number(unlisted));return}
  if(draft!==undefined){
   const j=batchJobs[Number(draft)];if(!j||j.origin!=="existing")return;
   if(!j.seoTitle?.trim()||!j.seoDescription?.trim())return alert("Prepare SEO first.");
@@ -297,7 +304,7 @@ $("batchList").onclick=async e=>{
  if(p!==undefined){await publishBatchVideo(+p);return}
  if(x!==undefined){
   if(batchRunning)return alert("Stop the batch before editing.");
-  const j=batchJobs[+x],title=prompt("YouTube title (max 100 characters)",j.seoTitle||j.title);if(title===null)return;
+  const j=batchJobs[+x];if(j.youtubeId)return alert("This video is already on YouTube. Edit the live metadata in YouTube Studio instead.");const title=prompt("YouTube title (max 100 characters)",j.seoTitle||j.title);if(title===null)return;
   const description=prompt("YouTube description",j.seoDescription);if(description===null)return;
   const keyword=prompt("Primary researched keyword",j.primaryKeyword);if(keyword===null)return;
   const tags=prompt("Tags (comma-separated)",(j.tags||[]).join(", "));if(tags===null)return;
@@ -360,9 +367,9 @@ function seoAttach(records){
  const statuses=new Map(batchJobs.filter(j=>j.pid&&j.origin==="existing").map(j=>[j.pid,j]));const target=new Map(statuses);
  for(const r of records){
   const p=projectById.get(r.pid),prior=statuses.get(r.pid);
-  if(prior?.publishContentId||["Published","Submitted","Processing","Submitting"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a submitted YouTube publishing request. Verify it before changing metadata.");
+  if(prior?.youtubeId||prior?.publishContentId||["Published","Submitted","Processing","Submitting","Unlisted"].includes(prior?.publishStatus))throw Error("Project "+r.pid+" already has a YouTube upload. Edit metadata in YouTube Studio rather than replacing the project SEO.");
   const item={...batchDefaults,...(prior||{}),title:p.name,seoTitle:r.title,seoDescription:r.description,primaryKeyword:r.primaryKeyword,tags:r.tags,research:r.research||prior?.research||null,
-   pid:p.pid,origin:"existing",draftPreparedAt:prior?.seoTitle===r.title&&prior?.seoDescription===r.description?prior?.draftPreparedAt||"":"",tagsCopiedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsCopiedAt||"":"",tagsAppliedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsAppliedAt||"":"",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
+   pid:p.pid,origin:"existing",youtubeId:prior?.youtubeId||"",youtubeVisibility:prior?.youtubeVisibility||"",youtubeUrl:prior?.youtubeUrl||"",draftPreparedAt:prior?.seoTitle===r.title&&prior?.seoDescription===r.description?prior?.draftPreparedAt||"":"",tagsCopiedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsCopiedAt||"":"",tagsAppliedAt:prior?.tags?.join("|")===r.tags.join("|")?prior?.tagsAppliedAt||"":"",videoUrl:p.videoUrl||prior?.videoUrl||"",status:p.videoUrl||prior?.videoUrl?"Complete":"Needs export",selected:false,approved:false};
   target.set(r.pid,item);
  }
  batchJobs=[...batchJobs.filter(j=>j.origin!=="existing"),...target.values()];batchPersist();batchDraw();existingDrawProjects();return records.length;
@@ -434,11 +441,87 @@ async function batchPublishStatus(index){
   alert(j.publishStatus==="Published"?"YouTube has confirmed the video is published.":j.publishStatus==="Failed"?j.error:"Still processing at Revid. Check again shortly.");
  }catch(e){alert("YouTube status check failed: "+e.message)}
 }
-$("openUnlistedStudio").onclick=()=>{
- if($("youtubeVisibility").value!=="unlisted")return alert("Choose Unlisted visibility first.");
- alert("YouTube Studio will open. Upload the Revid MP4 from its video card, fill in the matched title/description/tags, then choose Unlisted in the Visibility step and Save. Clip Farm cannot force Unlisted through Revid's Publish Now endpoint.");
- window.open("https://studio.youtube.com","_blank","noopener,noreferrer");
+let newSeoBusy=false;
+async function generateNewSeo(index,silent=false){
+ const j=batchJobs[index],k=keys();
+ if(!j||j.origin==="existing"||!j.pid||j.status!=="Complete")return alert("Render this new video in Revid before generating its SEO.");
+ if(j.youtubeId)return alert("This video is already uploaded. Edit its metadata in YouTube Studio.");
+ if(!k.vidiq||!k.gemini)return alert("Save your vidIQ and Gemini API keys first.");
+ if(newSeoBusy)return false;
+ newSeoBusy=true;
+ try{
+  $("newSeoProgress").textContent="Researching "+j.title+" with vidIQ and Gemini…";
+  const d=await api("/api/seo/project",{geminiKey:k.gemini,vidiqKey:k.vidiq,projectId:j.pid,projectTitle:j.title,projectText:j.script||j.prompt||""});
+  const r=seoVerify({format:"clipfarm-seo-v1",videos:[d]})[0];
+  j.seoTitle=r.title;j.seoDescription=r.description;j.primaryKeyword=r.primaryKeyword;j.tags=r.tags;j.research=r.research;
+  j.approved=false;j.tagsAppliedAt="";j.tagsCopiedAt="";batchPersist();batchDraw();
+  $("newSeoProgress").textContent="SEO ready for "+j.title+". Review and approve before Unlisted upload.";
+  return true;
+ }catch(err){$("newSeoProgress").textContent="SEO failed for "+j.title+": "+err.message;if(!silent)alert(err.message);return false}
+ finally{newSeoBusy=false}
+}
+$("newGenerateAllSeo").onclick=async()=>{
+ const rows=batchJobs.map((j,i)=>({j,i})).filter(({j})=>j.origin!=="existing"&&j.pid&&j.status==="Complete"&&!j.youtubeId);
+ if(!rows.length)return alert("No finished new Revid videos available for SEO generation.");
+ if(!confirm("Generate researched SEO for "+rows.length+" finished new Revid videos using vidIQ and Gemini? This uses API credits."))return;
+ let done=0;
+ for(const {i} of rows){if(await generateNewSeo(i,true))done++}
+ $("newSeoProgress").textContent="Generated SEO for "+done+" of "+rows.length+" videos. Review each before uploading to YouTube Unlisted.";
 };
+let youtubeConnected=false,youtubeUploadBusy=false,youtubeChannelLabel="";
+async function refreshDirectYoutube(){
+ try{
+  const d=await api("/api/youtube/status",{});
+  youtubeConnected=!!d.connected;youtubeChannelLabel=d.channelTitle||d.channelId||"";
+  $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected: "+(d.channelTitle||d.channelId||"Unknown channel")+" · Unlisted uploads enabled.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
+  $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
+ }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
+ return youtubeConnected;
+}
+$("youtubeRefreshConnection").onclick=refreshDirectYoutube;
+$("youtubeConnect").onclick=async()=>{
+ const clientId=$("youtubeOAuthClientId").value.trim(),clientSecret=$("youtubeOAuthClientSecret").value.trim();
+ if(!clientId)return alert("Enter your Google OAuth Desktop client ID. See Mac setup instructions.");
+ try{
+  const r=await api("/api/youtube/connect",{clientId,clientSecret});
+  if(!r.authorizationUrl)throw Error("No Google authorization link was returned.");
+  window.open(r.authorizationUrl,"_blank","noopener,noreferrer");
+  $("youtubeDirectStatus").textContent="Finish Google authorization in your browser, then click Check connection.";
+ }catch(e){alert("YouTube connection: "+e.message)}
+};
+$("youtubeDisconnect").onclick=async()=>{try{await api("/api/youtube/disconnect",{});await refreshDirectYoutube()}catch(e){alert(e.message)}};
+async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
+ const j=batchJobs[index];
+ if(!j||!j.videoUrl||!j.pid||j.status!=="Complete")return alert("This video must finish rendering in Revid first.");
+ if(!j.seoTitle?.trim()||!j.seoDescription?.trim()||!Array.isArray(j.tags))return alert("Prepare the video's complete YouTube metadata first.");
+ if(j.youtubeId||j.publishContentId||batchJobs.some(other=>other!==j&&other.pid===j.pid&&(other.youtubeId||other.publishContentId)))return alert("This Revid project is already linked to a YouTube upload. Open its existing video rather than uploading a duplicate.");
+ if(!j.approved)return alert("Preview the video and check Approved before upload.");
+ if($("youtubeVisibility").value!=="unlisted")return alert("Direct YouTube uploads are Unlisted only. Choose Unlisted.");
+ if(youtubeUploadBusy)return alert("Another Unlisted upload is in progress.");
+ if(!await refreshDirectYoutube())return alert("Connect your YouTube account in Clip Farm's Mac app first.");
+ if(!keys().revid)return alert("Connect your Revid API key first.");
+ if(!skipConfirmation&&!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube channel "'+(youtubeChannelLabel||"connected channel")+'" as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
+ youtubeUploadBusy=true;const progress=$("youtubeUploadProgress");progress.textContent="Uploading Revid video "+j.pid+" to YouTube as Unlisted…";
+ $("youtubeUploadAll").disabled=true;
+ try{
+  const result=await api("/api/youtube/upload-unlisted",{pid:j.pid,revidKey:keys().revid,title:j.seoTitle,description:j.seoDescription,tags:j.tags,visibility:"unlisted"});
+  if(!result.youtubeId)throw Error("YouTube did not return a video ID; check Studio before retrying.");
+  for(const rec of batchJobs.filter(x=>x.pid===j.pid)){rec.youtubeId=result.youtubeId;rec.youtubeUrl=result.youtubeUrl;rec.youtubeVisibility=result.visibility;rec.publishStatus=result.visibility==="unlisted"?"Unlisted":"Visibility review";rec.tagsAppliedAt=new Date().toISOString();rec.error=result.visibility==="unlisted"?"":"Actual YouTube visibility: "+result.visibility}
+  batchPersist();batchDraw();
+  if(result.visibility!=="unlisted"){progress.textContent="Uploaded, but YouTube visibility is "+result.visibility+". Review in YouTube Studio.";alert("The video uploaded successfully, but YouTube reports "+result.visibility+" visibility. Its YouTube ID is saved so it cannot be uploaded twice by mistake.");}
+  else{progress.textContent="Uploaded as Unlisted: "+j.seoTitle;say("YouTube Unlisted upload confirmed");}
+ }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
+ finally{youtubeUploadBusy=false;await refreshDirectYoutube()}
+}
+$("youtubeUploadAll").onclick=async()=>{
+ const seen=new Set();const eligible=batchJobs.map((j,i)=>({...j,index:i})).filter(j=>{if(!j.pid||seen.has(j.pid))return false;seen.add(j.pid);return j.videoUrl&&j.status==="Complete"&&j.approved&&j.seoTitle&&j.seoDescription&&!j.youtubeId&&!j.publishContentId});
+ if(!eligible.length)return alert("No approved, SEO-ready finished Revid videos to upload.");
+ if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
+ if(!confirm("Upload "+eligible.length+" videos to YouTube channel "+(youtubeChannelLabel||"connected channel")+" as UNLISTED with their matching SEO? No videos will be public."))return;
+ for(const j of eligible){await uploadToYouTubeUnlisted(j.index,true);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
+};
+refreshDirectYoutube();
+$("openUnlistedStudio").onclick=()=>window.open("https://studio.youtube.com","_blank","noopener,noreferrer");
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
  if(!j||j.origin!=="existing"||j.status!=="Complete"||!j.videoUrl||!j.pid)return alert("Match a completed existing Revid video with its SEO before publishing from this screen.");

@@ -4,6 +4,16 @@ This desktop app runs the Clip Farm interface and its existing API routes on you
 
 The Intel build targets macOS 10.15 Catalina and newer. Catalina support requires Electron 32.3.3; Electron 33 and newer require macOS 11 or newer. Electron 32 has reached end of support, so this build is intended for Catalina compatibility and uses an older Chromium runtime. Upgrade macOS when possible for a maintained desktop runtime.
 
+## Clip Farm → Revid → YouTube Unlisted
+
+The updated Intel Mac app can directly upload finished Revid projects to YouTube as **Unlisted**, including the matching video-specific title, description and keyword tags. You do not need to download MP4 files or paste metadata into YouTube Studio.
+
+You must authorize your YouTube account using a Google OAuth Desktop client and enable YouTube Data API v3 in your Google Cloud project. Clip Farm encrypts and remembers your Google connection in macOS local secure storage. All uploads require per-video approval; one bulk action can send all approved SEO-ready videos sequentially.
+
+**Setup and workflow:** [docs/revid-to-youtube-unlisted.md](../docs/revid-to-youtube-unlisted.md)
+
+This capability runs in the Mac app's local API bridge and is not available in the Cloudflare web version. The implementation has code and build-time checks, but live Revid/Google/YouTube integration requires a test with your authorized accounts.
+
 ## What is included
 
 - **Find videos:** search indexed public videos by topic, niche, or keyword.
