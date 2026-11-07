@@ -83,7 +83,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
-<section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Connect once each time you open Clip Farm. Enter your Google OAuth Desktop client credentials, then approve the YouTube upload permission in your browser.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div></section>
+<section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Authorize your YouTube account once; your Mac securely saves the connection. Enable YouTube Data API, create an OAuth Desktop client, and approve upload permissions in your browser.</p><p class="tiny"><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Enable YouTube Data API</a> · <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Create OAuth Desktop client</a> · If your OAuth consent screen is in Testing, add your Google account as a test user.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div></section>
 <div class="field"><label for="youtubeVisibility">YouTube visibility when uploading</label><select id="youtubeVisibility" class="input"><option value="unlisted" selected>Unlisted — only people with the link can watch</option><option value="public">Public — visible to everyone (advanced)</option></select><small>Unlisted is the default for the direct YouTube upload. Public posting through Revid remains a separate advanced option.</small></div>
 <div class="actions"><button class="btn primary" id="youtubeUploadAll">Upload all approved SEO-ready videos as Unlisted</button><button class="btn ghost" id="openUnlistedStudio">Open YouTube Studio</button></div><div id="youtubeUploadProgress" class="tiny" role="status" aria-live="polite">No upload in progress.</div>
 <div class="field"><label>Your YouTube publishing channel</label><div class="row"><select class="input" id="batchYoutubeAccount"><option value="">Load YouTube accounts</option></select><button class="btn ghost" id="batchLoadAccounts">Load accounts</button></div><small>Click Load accounts to find the YouTube channel already connected in Revid. If none appears, connect it in Revid Settings → Integrations. Revid sends the approved title and description; copy tags to YouTube Studio when needed.</small></div><details style="margin:16px 0;border:1px solid #68547b;padding:12px;border-radius:10px"><summary style="cursor:pointer;font-weight:700">Advanced: enable immediate public publishing through Revid</summary><div class="notice" style="margin-top:12px">Revid's Publish Now action may post publicly right away. It does NOT guarantee Unlisted visibility. To use it, select Public in the visibility field and explicitly confirm.</div><label style="display:flex;gap:8px;align-items:center;margin:12px 0;font-size:12px"><input type="checkbox" id="allowImmediatePublic"> I understand these videos may go public immediately</label></details><h3 style="margin-top:18px">SEO-ready Revid videos</h3><div class="videolist" id="batchList"></div>
@@ -465,11 +465,11 @@ $("newGenerateAllSeo").onclick=async()=>{
  for(const {i} of rows){if(await generateNewSeo(i,true))done++}
  $("newSeoProgress").textContent="Generated SEO for "+done+" of "+rows.length+" videos. Review each before uploading to YouTube Unlisted.";
 };
-let youtubeConnected=false,youtubeUploadBusy=false;
+let youtubeConnected=false,youtubeUploadBusy=false,youtubeChannelLabel="";
 async function refreshDirectYoutube(){
  try{
   const d=await api("/api/youtube/status",{});
-  youtubeConnected=!!d.connected;
+  youtubeConnected=!!d.connected;youtubeChannelLabel=d.channelTitle||d.channelId||"";
   $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected: "+(d.channelTitle||d.channelId||"Unknown channel")+" · Unlisted uploads enabled.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
   $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
  }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
@@ -497,7 +497,7 @@ async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
  if(youtubeUploadBusy)return alert("Another Unlisted upload is in progress.");
  if(!await refreshDirectYoutube())return alert("Connect your YouTube account in Clip Farm's Mac app first.");
  if(!keys().revid)return alert("Connect your Revid API key first.");
- if(!skipConfirmation&&!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
+ if(!skipConfirmation&&!confirm('Upload "'+(j.seoTitle||j.title)+'" from Revid to YouTube channel "'+(youtubeChannelLabel||"connected channel")+'" as UNLISTED with its title, description and '+j.tags.length+' tags?'))return;
  youtubeUploadBusy=true;const progress=$("youtubeUploadProgress");progress.textContent="Uploading Revid video "+j.pid+" to YouTube as Unlisted…";
  $("youtubeUploadAll").disabled=true;
  try{
@@ -514,7 +514,7 @@ $("youtubeUploadAll").onclick=async()=>{
  const seen=new Set();const eligible=batchJobs.map((j,i)=>({...j,index:i})).filter(j=>{if(!j.pid||seen.has(j.pid))return false;seen.add(j.pid);return j.videoUrl&&j.status==="Complete"&&j.approved&&j.seoTitle&&j.seoDescription&&!j.youtubeId&&!j.publishContentId});
  if(!eligible.length)return alert("No approved, SEO-ready finished Revid videos to upload.");
  if(!await refreshDirectYoutube())return alert("Connect YouTube first.");
- if(!confirm("Start "+eligible.length+" individual UNLISTED YouTube uploads? Each is a separate upload. No videos will be public."))return;
+ if(!confirm("Upload "+eligible.length+" videos to YouTube channel "+(youtubeChannelLabel||"connected channel")+" as UNLISTED with their matching SEO? No videos will be public."))return;
  for(const j of eligible){await uploadToYouTubeUnlisted(j.index,true);if(batchJobs[j.index].publishStatus!=="Unlisted")break}
 };
 refreshDirectYoutube();
