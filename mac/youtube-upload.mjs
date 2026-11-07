@@ -47,14 +47,14 @@ async function uploadUnlisted(input){
   const source=await fetch(videoUrl,{redirect:"follow"});
   if(!source.ok||!source.body)throw Error("Could not fetch finished Revid video: HTTP "+source.status);
   const mime=source.headers.get("content-type")||"video/mp4";
-  if(!mime.startsWith("video/")&&!mime.startsWith("application/octet-stream"))throw Error("Revid URL did not return a video file.");
+  if(!mime.startsWith("video/")&&!mime.startsWith("application/octet-stream")&&!mime.startsWith("application/mp4"))throw Error("Revid URL did not return a video file.");
   if(Number(source.headers.get("content-length"))>1024*1024*1024)throw Error("Video exceeds 1 GB desktop upload limit.");
   let received=0;
   const {Transform}=await import("node:stream");
   const limited=new Transform({transform(chunk,enc,cb){received+=chunk.length;if(received>1024*1024*1024)cb(Error("Video exceeds 1 GB desktop upload limit."));else cb(null,chunk)}});
   await pipeline(Readable.fromWeb(source.body),limited,createWriteStream(path));
   const fileSize=(await stat(path)).size;if(!fileSize)throw Error("Revid returned an empty video.");
-  const metadata={snippet:{title,description,tags,categoryId:"28"},status:{privacyStatus:"unlisted",selfDeclaredMadeForKids:false}};
+  const metadata={snippet:{title,description,tags,categoryId:"22"},status:{privacyStatus:"unlisted"}};
   const session=await fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",{
    method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json; charset=UTF-8","x-upload-content-length":String(fileSize),"x-upload-content-type":"video/mp4"},body:JSON.stringify(metadata)
   });
@@ -64,8 +64,10 @@ async function uploadUnlisted(input){
   if(!result.ok)throw Error("YouTube upload not confirmed. Inspect YouTube Studio before retrying to avoid duplicates. "+await remoteError(result));
   const video=await result.json();
   if(!/^[A-Za-z0-9_-]{11}$/.test(video.id||""))throw Error("YouTube did not return a valid video ID; check Studio before retrying.");
-  if(video.status?.privacyStatus&&video.status.privacyStatus!=="unlisted")throw Error("YouTube returned unexpected visibility: "+video.status.privacyStatus);
-  return {youtubeId:video.id,youtubeUrl:"https://www.youtube.com/watch?v="+video.id,visibility:"unlisted",title:video.snippet?.title||title};
+  const verify=await fetch("https://www.googleapis.com/youtube/v3/videos?part=status&id="+encodeURIComponent(video.id),{headers:{authorization:"Bearer "+token}});
+  if(!verify.ok)return {youtubeId:video.id,youtubeUrl:"https://www.youtube.com/watch?v="+video.id,visibility:video.status?.privacyStatus||"unknown",warning:"Upload finished but YouTube visibility could not be verified: "+await remoteError(verify)};
+  const check=await verify.json(),actual=check.items?.[0]?.status?.privacyStatus||video.status?.privacyStatus||"unknown";
+  return {youtubeId:video.id,youtubeUrl:"https://www.youtube.com/watch?v="+video.id,visibility:actual,title:video.snippet?.title||title};
  }finally{await rm(folder,{recursive:true,force:true})}
 }
 export async function handleYouTube(req,res,url){
@@ -83,6 +85,11 @@ export async function handleYouTube(req,res,url){
    const tokens=await t.json();
    if(!tokens.refresh_token)throw Error("Google did not return an offline refresh token. Reconnect and approve access.");
    connection={clientId:p.clientId,clientSecret:p.clientSecret,refreshToken:tokens.refresh_token,accessToken:tokens.access_token,expireAt:Date.now()+(tokens.expires_in||3500)*1000};
+   const channelRes=await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",{headers:{authorization:"Bearer "+connection.accessToken}});
+   if(!channelRes.ok){connection=null;throw Error("Could not identify your connected YouTube channel: "+await remoteError(channelRes))}
+   const channelData=await channelRes.json(),channel=channelData.items?.[0];
+   if(!channel?.id){connection=null;throw Error("No YouTube channel is associated with the Google account selected.")}
+   connection.channelId=channel.id;connection.channelTitle=channel.snippet?.title||channel.id;
    res.writeHead(200,{"content-type":"text/html; charset=utf-8"});res.end("<!doctype html><title>Clip Farm YouTube connected</title><h2>YouTube connected to Clip Farm.</h2><p>Return to Clip Farm Studio. You may close this tab.</p>");
   }catch(e){res.writeHead(400,{"content-type":"text/plain; charset=utf-8"});res.end("YouTube connection failed: "+err(e))}
   return true;
@@ -90,14 +97,14 @@ export async function handleYouTube(req,res,url){
  const origin=req.headers.origin||"";
  if(origin!=="http://127.0.0.1:43129"){json(res,403,{error:"This operation is only allowed from the local Clip Farm Mac app."});return true}
  try{
-  if(url.pathname==="/api/youtube/status"&&req.method==="POST"){json(res,200,{connected:!!connection,uploading:inProgress,mode:"desktop-unlisted"});return true}
+  if(url.pathname==="/api/youtube/status"&&req.method==="POST"){json(res,200,{connected:!!connection,channelId:connection?.channelId||"",channelTitle:connection?.channelTitle||"",uploading:inProgress,mode:"desktop-unlisted"});return true}
   if(url.pathname==="/api/youtube/disconnect"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");connection=null;json(res,200,{connected:false});return true}
   if(url.pathname==="/api/youtube/connect"&&req.method==="POST"){
    const input=await textBody(req),clientId=String(input.clientId||""),clientSecret=String(input.clientSecret||"");
    if(!clientId.endsWith(".apps.googleusercontent.com"))throw Error("Enter your Google OAuth Desktop client ID.");
    const state=verifier(),secret=verifier();
    pending={clientId,clientSecret,state,verifier:secret,expires:Date.now()+10*60*1000};
-   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
+   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
    json(res,200,{authorizationUrl:"https://accounts.google.com/o/oauth2/v2/auth?"+p.toString()});return true;
   }
   if(url.pathname==="/api/youtube/upload-unlisted"&&req.method==="POST"){
