@@ -31,6 +31,10 @@ const remoteError=async r=>{let body=await r.text();try{return JSON.parse(body).
 const verifier=()=>randomBytes(32).toString("base64url");
 const digest=s=>createHash("sha256").update(s).digest("base64url");
 const endpointCheck=(value)=>{const u=new URL(value);if(u.protocol!=="https:")throw Error("Revid did not provide a secure HTTPS video URL.");const host=u.hostname.toLowerCase();if(host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host.endsWith(".internal")||host==="metadata.google.internal"||/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.includes(":"))throw Error("Unsafe video host");return u.href};
+export async function getPublishingAuth(){
+ if(!connection?.channelId)throw Error("Connect your YouTube channel first.");
+ return {token:await refreshToken(),channelId:connection.channelId,channelTitle:connection.channelTitle||connection.channelId};
+}
 async function refreshToken(){
  if(!connection)throw Error("Connect YouTube first.");
  if(Date.now()<connection.expireAt-60000)return connection.accessToken;
@@ -135,7 +139,7 @@ export async function handleYouTube(req,res,url){
    if(!clientId.endsWith(".apps.googleusercontent.com"))throw Error("Enter your Google OAuth Desktop client ID.");
    const state=verifier(),secret=verifier();
    pending={clientId,clientSecret,state,verifier:secret,expires:Date.now()+10*60*1000};
-   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
+   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
    json(res,200,{authorizationUrl:"https://accounts.google.com/o/oauth2/v2/auth?"+p.toString()});return true;
   }
   if(url.pathname==="/api/youtube/upload-unlisted"&&req.method==="POST"){
