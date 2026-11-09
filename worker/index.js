@@ -599,6 +599,7 @@ async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
   batchPersist();batchDraw();
   if(result.visibility!=="unlisted"){progress.textContent="Uploaded, but YouTube visibility is "+result.visibility+". Review in YouTube Studio.";alert("The video uploaded successfully, but YouTube reports "+result.visibility+" visibility. Its YouTube ID is saved so it cannot be uploaded twice by mistake.");}
   else{progress.textContent="Uploaded as Unlisted: "+j.seoTitle;say("YouTube Unlisted upload confirmed");}
+  $("publishingSync").click();
  }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
  finally{youtubeUploadBusy=false;await refreshDirectYoutube()}
 }
@@ -707,7 +708,7 @@ $("publishingExport").onclick=()=>{
  const u=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=u;a.download="clipfarm-publishing-history.csv";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
 };
 publishingLoad();
-refreshDirectYoutube();
+refreshDirectYoutube().then(connected=>{if(connected)$("publishingSync").click()});
 $("openUnlistedStudio").onclick=()=>window.open("https://studio.youtube.com","_blank","noopener,noreferrer");
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];
