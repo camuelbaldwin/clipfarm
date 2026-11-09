@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, shell, ipcMain } from "electron";
 import { newSessionToken, allowedLocalRequest, LOCAL_ORIGIN, SESSION_HEADER } from "./local-auth.mjs";
 import { createServer } from "node:http";
 import { handleYouTube, restoreYouTubeConnection } from "./youtube-upload.mjs";
+import { handlePublishing } from "./publishing-history.mjs";
 import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,6 +43,7 @@ async function startLocalServer() {
         return;
       }
       if (await handleYouTube(incoming, outgoing, requestUrl)) return;
+      if (await handlePublishing(incoming, outgoing, requestUrl)) return;
       const address = server.address();
       const origin = `http://127.0.0.1:${address.port}`;
       const headers = new Headers();
