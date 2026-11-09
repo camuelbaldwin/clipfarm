@@ -28,6 +28,7 @@
       "worker.mjs",
       "package.json",
       "youtube-upload.mjs",
+      "publishing-history.mjs",
       "preload.cjs",
       "local-auth.mjs"
     ],
