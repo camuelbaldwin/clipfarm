@@ -7,21 +7,22 @@ import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
-let connection=null, pending=null, inProgress=false;
+let connection=null, knownConnections=[], pending=null, inProgress=false;
 const endpoint="http://127.0.0.1:43129/api/youtube/callback";
 const credentialFile=()=>join(app.getPath("userData"),"youtube-connection.bin");
+function publicChannels(){return knownConnections.map(c=>({channelId:c.channelId,channelTitle:c.channelTitle||c.channelId}))}
 async function rememberConnection(){
- if(!safeStorage.isEncryptionAvailable())return false;
- const encrypted=safeStorage.encryptString(JSON.stringify({clientId:connection.clientId,clientSecret:connection.clientSecret,refreshToken:connection.refreshToken,channelId:connection.channelId,channelTitle:connection.channelTitle}));
- await writeFile(credentialFile(),encrypted,{mode:0o600});return true;
+ if(!safeStorage.isEncryptionAvailable())throw Error("Secure storage is unavailable.");
+ if(connection?.channelId){knownConnections=knownConnections.filter(c=>c.channelId!==connection.channelId);knownConnections.push({...connection,accessToken:"",expireAt:0})}
+ const channels=knownConnections.map(c=>({clientId:c.clientId,clientSecret:c.clientSecret,refreshToken:c.refreshToken,channelId:c.channelId,channelTitle:c.channelTitle}));
+ await writeFile(credentialFile(),safeStorage.encryptString(JSON.stringify({channels,activeChannelId:connection?.channelId||""})),{mode:0o600});return true;
 }
 export async function restoreYouTubeConnection(){
- try{
-  if(!safeStorage.isEncryptionAvailable())return;
-  const encrypted=await readFile(credentialFile());
-  const saved=JSON.parse(safeStorage.decryptString(encrypted));
-  if(!saved.clientId||!saved.refreshToken)return;
-  connection={...saved,accessToken:"",expireAt:0};
+ try{if(!safeStorage.isEncryptionAvailable())return;
+  const saved=JSON.parse(safeStorage.decryptString(await readFile(credentialFile())));
+  const channels=Array.isArray(saved.channels)?saved.channels:(saved.refreshToken?[saved]:[]);
+  knownConnections=channels.filter(c=>c.clientId&&c.refreshToken&&c.channelId).map(c=>({...c,accessToken:"",expireAt:0}));
+  connection=knownConnections.find(c=>c.channelId===saved.activeChannelId)||knownConnections[0]||null;
  }catch{return}
 }
 const json=(res,code,body)=>{res.writeHead(code,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});res.end(JSON.stringify(body))};
@@ -31,6 +32,10 @@ const remoteError=async r=>{let body=await r.text();try{return JSON.parse(body).
 const verifier=()=>randomBytes(32).toString("base64url");
 const digest=s=>createHash("sha256").update(s).digest("base64url");
 const endpointCheck=(value)=>{const u=new URL(value);if(u.protocol!=="https:")throw Error("Revid did not provide a secure HTTPS video URL.");const host=u.hostname.toLowerCase();if(host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host.endsWith(".internal")||host==="metadata.google.internal"||/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.includes(":"))throw Error("Unsafe video host");return u.href};
+export async function getPublishingAuth(){
+ if(!connection?.channelId)throw Error("Connect your YouTube channel first.");
+ return {token:await refreshToken(),channelId:connection.channelId,channelTitle:connection.channelTitle||connection.channelId};
+}
 async function refreshToken(){
  if(!connection)throw Error("Connect YouTube first.");
  if(Date.now()<connection.expireAt-60000)return connection.accessToken;
@@ -114,11 +119,11 @@ export async function handleYouTube(req,res,url){
    if(!t.ok)throw Error(await remoteError(t));
    const tokens=await t.json();
    if(!tokens.refresh_token)throw Error("Google did not return an offline refresh token. Reconnect and approve access.");
-   connection={clientId:p.clientId,clientSecret:p.clientSecret,refreshToken:tokens.refresh_token,accessToken:tokens.access_token,expireAt:Date.now()+(tokens.expires_in||3500)*1000};
+   const previous=connection;connection={clientId:p.clientId,clientSecret:p.clientSecret,refreshToken:tokens.refresh_token,accessToken:tokens.access_token,expireAt:Date.now()+(tokens.expires_in||3500)*1000};
    const channelRes=await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",{headers:{authorization:"Bearer "+connection.accessToken}});
-   if(!channelRes.ok){connection=null;throw Error("Could not identify your connected YouTube channel: "+await remoteError(channelRes))}
+   if(!channelRes.ok){connection=previous;throw Error("Could not identify your connected YouTube channel: "+await remoteError(channelRes))}
    const channelData=await channelRes.json(),channel=channelData.items?.[0];
-   if(!channel?.id){connection=null;throw Error("No YouTube channel is associated with the Google account selected.")}
+   if(!channel?.id){connection=previous;throw Error("No YouTube channel is associated with the Google account selected.")}
    connection.channelId=channel.id;connection.channelTitle=channel.snippet?.title||channel.id;
    await rememberConnection();
    res.writeHead(200,{"content-type":"text/html; charset=utf-8"});res.end("<!doctype html><title>Clip Farm YouTube connected</title><h2>YouTube connected to Clip Farm.</h2><p>Return to Clip Farm Studio. You may close this tab.</p>");
@@ -128,14 +133,15 @@ export async function handleYouTube(req,res,url){
  const origin=req.headers.origin||"";
  if(origin!=="http://127.0.0.1:43129"){json(res,403,{error:"This operation is only allowed from the local Clip Farm Mac app."});return true}
  try{
-  if(url.pathname==="/api/youtube/status"&&req.method==="POST"){json(res,200,{connected:!!connection,channelId:connection?.channelId||"",channelTitle:connection?.channelTitle||"",uploading:inProgress,mode:"desktop-unlisted"});return true}
-  if(url.pathname==="/api/youtube/disconnect"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");connection=null;await unlink(credentialFile()).catch(()=>{});json(res,200,{connected:false});return true}
+  if(url.pathname==="/api/youtube/status"&&req.method==="POST"){json(res,200,{connected:!!connection,channelId:connection?.channelId||"",channelTitle:connection?.channelTitle||"",uploading:inProgress,mode:"desktop-unlisted",channels:publicChannels()});return true}
+  if(url.pathname==="/api/youtube/disconnect"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");knownConnections=knownConnections.filter(c=>c.channelId!==connection?.channelId);connection=knownConnections[0]||null;if(connection)await rememberConnection();else await unlink(credentialFile()).catch(()=>{});json(res,200,{connected:!!connection,channels:publicChannels()});return true}
+  if(url.pathname==="/api/youtube/switch"&&req.method==="POST"){if(inProgress)throw Error("Wait until upload completes.");const input=await textBody(req),selected=knownConnections.find(c=>c.channelId===input.channelId);if(!selected)throw Error("Connect this channel first.");connection=selected;await rememberConnection();json(res,200,{connected:true,channelId:connection.channelId,channelTitle:connection.channelTitle,channels:publicChannels()});return true}
   if(url.pathname==="/api/youtube/connect"&&req.method==="POST"){
    const input=await textBody(req),clientId=String(input.clientId||""),clientSecret=String(input.clientSecret||"");
    if(!clientId.endsWith(".apps.googleusercontent.com"))throw Error("Enter your Google OAuth Desktop client ID.");
    const state=verifier(),secret=verifier();
    pending={clientId,clientSecret,state,verifier:secret,expires:Date.now()+10*60*1000};
-   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
+   const p=new URLSearchParams({client_id:clientId,redirect_uri:endpoint,response_type:"code",scope:"https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl",access_type:"offline",prompt:"consent",state,code_challenge:digest(secret),code_challenge_method:"S256"});
    json(res,200,{authorizationUrl:"https://accounts.google.com/o/oauth2/v2/auth?"+p.toString()});return true;
   }
   if(url.pathname==="/api/youtube/upload-unlisted"&&req.method==="POST"){

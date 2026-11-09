@@ -52,3 +52,20 @@ To install: open the DMG, drag the application to Applications, then Control-cli
 
 **If there is no DMG in Releases or Artifacts:** the workflow has not finished successfully. Open the latest Actions run and inspect the first red step. Do not download the GitHub `Source code.zip` archive: that is source code, not the installer.
 
+
+
+## Publishing tracker and scheduled YouTube releases
+
+The Mac app now has a **YouTube Publishing Tracker** in Batch Production.
+
+1. Connect YouTube. To authorize additional channels under the same Google account, choose **Connect YouTube** again and select the channel in Google's authorization screen.
+2. Use **Active publishing channel** to select which authorized channel receives new uploads and schedule requests.
+3. Click **Sync connected channel** to read the channel's actual recent uploads, visibility, schedule, views, likes and comments. This includes videos uploaded directly through YouTube Studio.
+4. Use the channel/status filters to browse a combined local history. **Export CSV** creates a local report.
+5. To schedule an eligible, never-public video: sync its channel, select an Unlisted or Private upload, choose a future local date/time, and approve the confirmation. YouTube stores the schedule and publishes without the Mac running.
+
+**Important limitations:** This tracker stores its local history in the Electron userData directory; it is not a cloud synchronization service. Reconnect each channel at least once to authorize and track it. Each sync scans up to the newest 500 uploaded videos of the currently selected channel, and retains previously discovered records across channel switches. Private, scheduled and public states must be refreshed from YouTube; a cached status is not proof the video went live. Deleted videos can remain in the local historical log until separately reconciled. Revid's *Publish Now* action does not share this guaranteed Google-based scheduling path.
+
+**Google permissions:** Scheduling via YouTube Data API requires the \`youtube.force-ssl\` OAuth scope in addition to prior upload and read scopes. Existing Clip Farm YouTube connections must be **re-authorized** with the additional permission before scheduling. Google's API only allows scheduling never-public videos in Private state and will reject invalid requests. <https://developers.google.com/youtube/data/reference/rest/v3/videos>
+
+**Checks:** \`cd mac && npm run test:publishing\`. Live YouTube authentication, API quota, successful schedule activation, Mac packaging and time-zone behavior still need an end-to-end test before production use. Do not assume a scheduled upload is confirmed until YouTube's API returns the schedule.

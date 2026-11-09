@@ -87,8 +87,18 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:var(--li
 <div class="tiny" id="existingStatus" role="status" aria-live="polite">Choose a Revid video, then choose the SEO metadata that belongs to it.</div>
 <div class="videolist" id="existingProjects" style="margin-top:10px"></div>
 </section>
-<section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Authorize your YouTube account once; your Mac securely saves the connection. Enable YouTube Data API, create an OAuth Desktop client, and approve upload permissions in your browser.</p><p class="tiny"><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Enable YouTube Data API</a> · <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Create OAuth Desktop client</a> · If your OAuth consent screen is in Testing, add your Google account as a test user.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div></section>
-<section class="card" style="margin:16px 0;background:#201a2b;border:1px solid #78628e">
+<section class="card" style="margin:16px 0;background:#191521"><h3>Direct YouTube connection for Unlisted uploads</h3><p class="tiny">Mac desktop only. Authorize your YouTube account once; your Mac securely saves the connection. Enable YouTube Data API, create an OAuth Desktop client, and approve upload permissions in your browser.</p><p class="tiny"><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Enable YouTube Data API</a> · <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Create OAuth Desktop client</a> · If your OAuth consent screen is in Testing, add your Google account as a test user.</p><div class="field"><label for="youtubeOAuthClientId">Google OAuth Desktop client ID</label><input id="youtubeOAuthClientId" class="input" placeholder="…apps.googleusercontent.com"></div><div class="field"><label for="youtubeOAuthClientSecret">Google OAuth Desktop client secret</label><input id="youtubeOAuthClientSecret" class="input" type="password" placeholder="Google OAuth client secret (if provided)"></div><div class="actions"><button class="btn primary" id="youtubeConnect">Connect YouTube</button><button class="btn ghost" id="youtubeDisconnect">Disconnect</button><button class="btn ghost" id="youtubeRefreshConnection">Check connection</button></div><div id="youtubeDirectStatus" class="tiny" role="status" aria-live="polite">Checking YouTube connection…</div><div class="field"><label for="youtubeActiveChannel">Active publishing channel</label><select id="youtubeActiveChannel" class="input"><option value="">Connect YouTube first</option></select><small>Authorize each channel once, then switch here before uploading or scheduling.</small></div></section>
+<section class="card" style="margin:16px 0;background:#191521" id="publishingTracker">
+<h3>YouTube Publishing Tracker</h3><p class="tiny">Mac only. Sync actual YouTube uploads, including videos uploaded through YouTube Studio. Saved history is kept for every channel you connect, even when you switch.</p>
+<div class="actions"><button class="btn primary" id="publishingSync">Sync connected channel</button><button class="btn ghost" id="publishingHistoryRefresh">Show saved history</button><button class="btn ghost" id="publishingExport">Export CSV</button></div>
+<div class="row"><div class="field"><label>Channel</label><select id="publishingChannelFilter" class="input"><option value="">All channels</option></select></div><div class="field"><label>Status</label><select id="publishingStatusFilter" class="input"><option value="">All statuses</option><option>Published</option><option>Scheduled</option><option>Unlisted</option><option>Private</option><option>Failed</option></select></div></div>
+<div class="tiny" id="publishingTrackerStatus" role="status" aria-live="polite">Sync your YouTube channel to see your uploads.</div><div class="videolist" id="publishingHistoryRows" style="max-height:480px;overflow:auto"></div>
+<details class="field"><summary style="cursor:pointer;font-weight:700">Schedule an uploaded video</summary>
+<p class="tiny">YouTube keeps it Private until release. Previously published videos cannot be scheduled. The Mac does not need to remain on.</p>
+<div class="field"><label>Choose connected-channel video</label><select id="publishingVideo" class="input"><option value="">Sync channel first</option></select></div>
+<div class="field"><label>Publish date &amp; time (Mac local time)</label><input type="datetime-local" id="publishingAt" class="input"></div>
+<div class="actions"><button class="btn primary" id="publishingSchedule">Confirm and schedule on YouTube</button></div></details>
+</section><section class="card" style="margin:16px 0;background:#201a2b;border:1px solid #78628e">
 <h3 style="margin-top:0">First upload: Revid → YouTube Unlisted</h3>
 <p class="tiny">Test one finished Revid video with matched SEO. No manual MP4 download, copying tags or public publishing.</p>
 <div class="field"><label for="guidedVideo">1 · Choose a finished Revid video</label><select id="guidedVideo" class="input"><option value="">Refresh Revid videos to begin</option></select></div>
@@ -544,11 +554,19 @@ async function refreshDirectYoutube(){
   const d=await api("/api/youtube/status",{});
   youtubeConnected=!!d.connected;youtubeChannelLabel=d.channelTitle||d.channelId||"";
   $("youtubeDirectStatus").textContent=youtubeConnected?"YouTube connected: "+(d.channelTitle||d.channelId||"Unknown channel")+" · Unlisted uploads enabled.":("YouTube not connected yet. "+(d.mode==="desktop-unlisted"?"Connect above.":"Use the Clip Farm Mac app for direct uploads."));
+  const channelSelect=$("youtubeActiveChannel");
+  channelSelect.innerHTML='<option value="">Choose channel</option>'+(d.channels||[]).map(c=>'<option value="'+esc(c.channelId)+'">'+esc(c.channelTitle)+'</option>').join("");
+  channelSelect.value=d.channelId||"";channelSelect.disabled=youtubeUploadBusy;
   $("youtubeUploadAll").disabled=!youtubeConnected||youtubeUploadBusy;
  }catch{youtubeConnected=false;$("youtubeDirectStatus").textContent="Direct YouTube upload is available only in the current Clip Farm Mac app.";$("youtubeUploadAll").disabled=true}
  guidedDraw();
  return youtubeConnected;
 }
+$("youtubeActiveChannel").onchange=async()=>{
+ const id=$("youtubeActiveChannel").value;if(!id)return;
+ try{await api("/api/youtube/switch",{channelId:id});publishingChannelId="";await refreshDirectYoutube();$("publishingTrackerStatus").textContent="Channel changed. Click Sync connected channel before scheduling.";}
+ catch(e){alert("Could not switch YouTube channel: "+e.message);await refreshDirectYoutube()}
+};
 $("youtubeRefreshConnection").onclick=refreshDirectYoutube;
 $("youtubeConnect").onclick=async()=>{
  const clientId=$("youtubeOAuthClientId").value.trim(),clientSecret=$("youtubeOAuthClientSecret").value.trim();
@@ -581,6 +599,7 @@ async function uploadToYouTubeUnlisted(index,skipConfirmation=false){
   batchPersist();batchDraw();
   if(result.visibility!=="unlisted"){progress.textContent="Uploaded, but YouTube visibility is "+result.visibility+". Review in YouTube Studio.";alert("The video uploaded successfully, but YouTube reports "+result.visibility+" visibility. Its YouTube ID is saved so it cannot be uploaded twice by mistake.");}
   else{progress.textContent="Uploaded as Unlisted: "+j.seoTitle;say("YouTube Unlisted upload confirmed");}
+  $("publishingSync").click();
  }catch(err){j.error="YouTube Unlisted upload: "+err.message;batchPersist();batchDraw();progress.textContent=j.error;alert(j.error+"\nIf the upload result is uncertain, check YouTube Studio before retrying to avoid duplicates.")}
  finally{youtubeUploadBusy=false;await refreshDirectYoutube()}
 }
@@ -643,7 +662,53 @@ $("guidedUploadUnlisted").onclick=async()=>{
   $("guidedStatus").innerHTML='Unlisted upload confirmed. <a href="'+esc(j.youtubeUrl)+'" target="_blank" rel="noreferrer">Open uploaded video</a> or <a href="'+esc(youtubeStudioLink(j))+'" target="_blank" rel="noreferrer">review tags and visibility in YouTube Studio</a>. After checking this test, use the bulk upload option for other approved videos.';
  }
 };
-refreshDirectYoutube();
+let publishingRecords=[],publishingChannelId="",publishingBusy=false;
+const csvCell=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+function publishingDraw(){
+ const ch=$("publishingChannelFilter").value,st=$("publishingStatusFilter").value;
+ const shown=publishingRecords.filter(v=>(!ch||v.channelId===ch)&&(!st||v.publicationStatus===st));
+ $("publishingHistoryRows").innerHTML=shown.length?shown.map(v=>'<div class="fileitem" style="display:block;margin:6px 0;padding:10px"><b>'+esc(v.title||"Untitled")+'</b><p class="tiny">'+esc(v.channelTitle||v.channelId||"Unknown channel")+' · '+esc(v.publicationStatus||"Unknown")+' · '+esc(v.publishAt||v.publishedAt||v.uploadedAt||"Date unavailable")+'</p><p class="tiny">Views '+Number(v.viewCount||0).toLocaleString()+' · Likes '+Number(v.likeCount||0).toLocaleString()+'</p><a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">Open on YouTube</a></div>').join(""):'<p class="tiny">No videos match. Sync the connected channel to refresh.</p>';
+ const options=publishingRecords.filter(v=>v.channelId===publishingChannelId&&["Unlisted","Private","Scheduled"].includes(v.publicationStatus)),sel=$("publishingVideo"),old=sel.value;
+ sel.innerHTML='<option value="">Choose video</option>'+options.map(v=>'<option value="'+esc(v.youtubeId)+'">'+esc(v.title)+' — '+esc(v.publicationStatus)+'</option>').join("");
+ if(options.some(v=>v.youtubeId===old))sel.value=old;
+}
+async function publishingLoad(){
+ try{
+  const r=await api("/api/publishing/history",{});publishingRecords=r.items||[];
+  const sel=$("publishingChannelFilter"),old=sel.value,channels=new Map(publishingRecords.map(v=>[v.channelId,v.channelTitle||v.channelId]));
+  sel.innerHTML='<option value="">All channels</option>'+[...channels].filter(([id])=>id).map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join("");
+  if(channels.has(old))sel.value=old;publishingDraw();
+  $("publishingTrackerStatus").textContent=publishingRecords.length+' records across '+channels.size+' tracked channels. Last saved status until resynced.';
+ }catch(e){$("publishingTrackerStatus").textContent="Publishing history available in Clip Farm Mac app: "+e.message}
+}
+$("publishingHistoryRefresh").onclick=publishingLoad;
+$("publishingChannelFilter").onchange=publishingDraw;
+$("publishingStatusFilter").onchange=publishingDraw;
+$("publishingSync").onclick=async()=>{
+ if(publishingBusy)return;publishingBusy=true;$("publishingSync").disabled=true;
+ $("publishingTrackerStatus").textContent="Syncing current YouTube uploads…";
+ try{const r=await api("/api/publishing/sync",{});publishingChannelId=r.channelId;await publishingLoad();$("publishingTrackerStatus").textContent="Synced "+r.scanned+" uploads for "+r.channelTitle+(r.hasMore?" (newest 500 only)":"")+".";}
+ catch(e){$("publishingTrackerStatus").textContent="Sync failed: "+e.message}
+ finally{publishingBusy=false;$("publishingSync").disabled=false}
+};
+$("publishingSchedule").onclick=async()=>{
+ const id=$("publishingVideo").value,raw=$("publishingAt").value,date=new Date(raw),rec=publishingRecords.find(v=>v.youtubeId===id);
+ if(!rec||!raw||!Number.isFinite(date.getTime())||date.getTime()<Date.now()+300000)return alert("Select an eligible video and a time at least five minutes in the future.");
+ if(!publishingChannelId||rec.channelId!==publishingChannelId)return alert("Sync the correct connected channel first.");
+ if(!confirm('Schedule "'+rec.title+'" on "'+rec.channelTitle+'" for '+date.toLocaleString()+'? YouTube will keep it Private until then.'))return;
+ $("publishingSchedule").disabled=true;
+ try{const r=await api("/api/publishing/schedule",{youtubeId:id,publishAt:date.toISOString(),channelId:publishingChannelId});await publishingLoad();$("publishingTrackerStatus").textContent="YouTube confirmed: "+r.item.title+" scheduled for "+new Date(r.item.publishAt).toLocaleString();}
+ catch(e){alert("Could not confirm schedule: "+e.message+". Check YouTube Studio before trying again.")}
+ finally{$("publishingSchedule").disabled=false}
+};
+$("publishingExport").onclick=()=>{
+ if(!publishingRecords.length)return alert("No saved records; sync first.");
+ const cols=["channelTitle","channelId","title","youtubeId","youtubeUrl","publicationStatus","visibility","publishAt","publishedAt","uploadedAt","viewCount","likeCount","commentCount","lastSyncedAt"];
+ const csv=[cols.join(","),...publishingRecords.map(v=>cols.map(k=>csvCell(v[k])).join(","))].join("\r\n");
+ const u=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=u;a.download="clipfarm-publishing-history.csv";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)
+};
+publishingLoad();
+refreshDirectYoutube().then(connected=>{if(connected)$("publishingSync").click()});
 $("openUnlistedStudio").onclick=()=>window.open("https://studio.youtube.com","_blank","noopener,noreferrer");
 async function publishBatchVideo(index){
  const j=batchJobs[index],sel=$("batchYoutubeAccount"),account=sel.selectedOptions[0];

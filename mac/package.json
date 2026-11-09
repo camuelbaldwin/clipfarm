@@ -11,6 +11,7 @@
     "pack:mac:x64": "npm run sync:worker && electron-builder --mac dmg --x64",
     "pack:mac:arm64": "npm run sync:worker && electron-builder --mac dmg --arm64",
     "test:unlisted": "node scripts/verify-unlisted.mjs",
+    "test:publishing": "node scripts/verify-publishing.mjs",
     "test:local-security": "node scripts/verify-local-security.mjs"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
       "worker.mjs",
       "package.json",
       "youtube-upload.mjs",
+      "publishing-history.mjs",
       "preload.cjs",
       "local-auth.mjs"
     ],
