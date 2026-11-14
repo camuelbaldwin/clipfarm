@@ -261,8 +261,25 @@ function batchRead(input){
     tags:tags.map(x=>x.trim()).filter(Boolean).slice(0,50)};
  });
 }
+function photoFilename(v){return String(v||"").trim().toLowerCase()}
+function missingStoryPhotos(v){
+ const seq=Array.isArray(v.photoSequence)?v.photoSequence:[],photos=Array.isArray(v.photos)?v.photos:[];
+ const names=new Set(photos.map(p=>photoFilename(p.title)));
+ return seq.filter(p=>!names.has(photoFilename(p.filename))).map(p=>p.filename);
+}
+function checkedStoryPhotos(v){
+ const seq=Array.isArray(v.photoSequence)?v.photoSequence:[],photos=Array.isArray(v.photos)?v.photos:[];
+ if(photos.length>12)throw Error(v.title+": Maximum 12 photos.");
+ if(!seq.length)return photos;
+ const names=seq.map(p=>photoFilename(p.filename));
+ if(new Set(names).size!==names.length)throw Error(v.title+": Duplicate filenames in photo_sequence.");
+ const missing=missingStoryPhotos(v);
+ if(missing.length)throw Error(v.title+": Attach required story photos before estimating or rendering: "+missing.join(", "));
+ if(photos.length!==seq.length)throw Error(v.title+": Photo count differs from photo_sequence.");
+ return seq.map(p=>photos.find(x=>photoFilename(x.title)===photoFilename(p.filename)));
+}
 function batchMedia(){let t=$("batchStyle").value;return t==="anime"?{type:"ai-video",videoModel:"pro",mediaPreset:"ANIME"}:t==="motion-graphics"?{type:"motion-graphics",videoModel:"pro",mediaPreset:"MOTION_INSPIRATION_DARK_SAAS"}:t==="stock-video"?{type:"stock-video"}:{type:"ai-video",videoModel:"pro"}}
-function batchPayload(v){const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40},media=v.photos?.length?{type:"custom",provided:v.photos.map(p=>({url:p.url,type:"image",...(p.title?{title:p.title}:{})})),useOnlyProvided:true,useProvidedInOrder:true,turnImagesIntoVideos:true}:batchMedia();return {workflow:mode,source,aspectRatio:"9:16",media,voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
+function batchPayload(v){const storyPhotos=checkedStoryPhotos(v);const mode=$("batchMode").value,source=mode==="script-to-video"?{text:v.script}:{prompt:"Create an original educational video. Try to use this narration verbatim (not guaranteed): "+v.script+"\n\nVISUAL INSTRUCTIONS: "+v.prompt,stylePrompt:v.stylePrompt,durationSeconds:40},media=storyPhotos.length?{type:"custom",provided:storyPhotos.map(p=>({url:p.url,type:"image",...(p.title?{title:p.title}:{})})),useOnlyProvided:true,useProvidedInOrder:true,turnImagesIntoVideos:true}:batchMedia();return {workflow:mode,source,aspectRatio:"9:16",media,voice:{enabled:true},captions:{enabled:true},music:{enabled:false},render:{resolution:$("batchResolution").value,frameRate:30}}}
 function youtubeTagsText(tags){return [...new Set((Array.isArray(tags)?tags:[]).map(x=>String(x).trim().replace(/^#+/,"")).filter(Boolean))].join(", ")}
 function youtubeTagsLength(tags){return (Array.isArray(tags)?tags:[]).reduce((sum,tag,i)=>sum+String(tag).length+(String(tag).includes(" ")?2:0)+(i?1:0),0)}
 function youtubeStudioLink(j){const match=String(j.youtubeUrl||"").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);return match?"https://studio.youtube.com/video/"+match[1]+"/edit":"https://studio.youtube.com"}
@@ -323,7 +340,8 @@ function batchDraw(){
   (v.origin==="existing"&&!v.videoUrl?'<button class="btn small ghost" data-bvideo-refresh="'+i+'">Check Revid video</button> ':'')+(v.origin==="existing"?"":'<button class="btn small ghost" data-bedit="'+i+'">Edit script</button> '+(v.status==="Complete"&&v.pid?'<button class="btn small ghost" data-new-generate-seo="'+i+'">Generate SEO (vidIQ + Gemini)</button> ':''))+'<button class="btn small ghost" data-bseo="'+i+'">Edit SEO</button> <button class="btn small ghost" data-bcopy="'+i+'">Copy YouTube metadata</button> '+
   (v.videoUrl?'<a href="'+esc(v.videoUrl)+'" target="_blank" rel="noreferrer">Preview / download MP4</a> <label style="margin-left:10px"><input type="checkbox" data-bapprove="'+i+'" '+(v.approved?"checked":"")+'> Approved</label> ':'')+
   (v.videoUrl&&v.pid&&v.seoTitle&&v.seoDescription?'<button class="btn small primary" data-unlisted-upload="'+i+'" '+(v.youtubeId||v.publishContentId?'disabled':'')+'>Upload Unlisted + SEO</button>':'')+
-  '+photoPanel+\n  (v.origin==="existing"?'<button class="btn small ghost" data-bdraft="'+i+'" '+(!v.seoTitle||!v.seoDescription?'disabled':'')+'>Save SEO for Later</button>':'')+
+  photoPanel+
+  (v.origin==="existing"?'<button class="btn small ghost" data-bdraft="'+i+'" '+(!v.seoTitle||!v.seoDescription?'disabled':'')+'>Save SEO for Later</button>':'')+
   (v.origin==="existing"&&v.videoUrl&&v.approved?'<button class="btn small ghost" data-bpublish="'+i+'" '+(published||v.publishStatus==="Submitting"?"disabled":"")+'>Publish Publicly (Advanced)</button>':'')+
   (v.publishContentId?' <button class="btn small ghost" data-brefresh="'+i+'">Check YouTube status</button>':'')+(v.youtubeUrl?' <a href="'+esc(v.youtubeUrl)+'" target="_blank" rel="noreferrer">YouTube link</a>':'')+
   (v.youtubeId?'<p class="tiny">YouTube '+esc(v.youtubeVisibility||'Unlisted')+' · '+esc(v.youtubeId)+'</p>':'')+(v.origin==="existing"?'<p class="tiny">'+(v.draftPreparedAt?'SEO saved in Clip Farm. Not uploaded to YouTube.':'SEO not saved for later yet. No upload by this feature.')+'</p>':'')+tagPanel+'</div>';
@@ -750,6 +768,7 @@ async function batchStatus(j){
 $("batchStart").onclick=async()=>{
  const selected=batchJobs.filter(j=>j.origin!=="existing"&&j.selected&&j.status==="Ready"),sum=selected.reduce((a,j)=>a+Number(j.credits||0),0);
  if(!selected.length||!batchEstimated)return;
+ try{for(const j of selected)checkedStoryPhotos(j)}catch(e){return alert(e.message)}
  if(!keys().revid)return alert("Enter your Revid key in API connections.");
  const concurrency=Math.min(10,Math.max(1,Number($("batchConcurrency").value)||1));
  if(!confirm("Submit "+selected.length+" separate Revid render jobs with up to "+concurrency+" running at once?\nEstimated total: "+sum+" credits, including estimated render fees. Actual billing may vary. Keep Clip Farm open. Stop prevents NEW submissions but does not cancel charged Revid jobs. No videos are published automatically."))return;
