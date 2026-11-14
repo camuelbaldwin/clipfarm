@@ -21,6 +21,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Show source version for installer build
+        run: |
+          echo "Commit: $GITHUB_SHA"
+          node -p "'Clip Farm Studio v' + require('./mac/package.json').version"
       - name: Install desktop dependencies
         working-directory: mac
         run: npm install --no-audit --no-fund
