@@ -9,7 +9,7 @@ const script=worker.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert(script,"Clip Farm browser script must exist");
 new Function(script); // Catch malformed string concatenation and broken photo-card markup.
 assert(!script.includes("'+photoPanel+\\n"),"Photo panel must be valid JavaScript concatenation");
-assert(script.includes('id="batchPhotoTemplate"'),"Photo story JSON example must be accessible in existing interface");
+assert(worker.includes('id="batchPhotoTemplate"'),"Photo story JSON example must be accessible in existing interface");
 assert(script.includes('$("batchPhotoTemplate").onclick'),"Photo-story example button must work");
 assert(script.includes('headers:await localSessionHeaders(),body:form'),"Photo upload must pass local server authentication");
 assert(script.includes('checkedStoryPhotos(v)'),"Photo sequences must be checked before creating payload");
